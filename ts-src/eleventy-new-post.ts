@@ -360,9 +360,8 @@ validateConfig(validations)
       targetFileName = path.join(targetFileName, postTitle.toLowerCase().replace(' ', '-'), templateExtension);
 
       // write the post file
-
-
-
+      log.info(`Writing changes to ${targetFileName}`);
+      fs.writeFileSync(targetFileName, '');
     } else {
       log.error(res.message);
       process.exit(1);
