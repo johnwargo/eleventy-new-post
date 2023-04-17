@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 
 /** 
- * Eleventy Category File Generator
+ * Eleventy New Post
  * by John M. Wargo (https://johnwargo.com)
  * Created March 20, 2023
  */
 
-// TODO: Write all log output to a file
 
 // node modules
 import fs from 'fs-extra';
@@ -18,18 +17,29 @@ import YAML from 'yaml'
 import yesno from 'yesno';
 //@ts-ignore
 import logger from 'cli-logger';
-
 var log = logger();
 
-// project modules
-import { CategoryRecord, ConfigObject, ConfigValidation, ProcessResult } from './types';
+type ConfigObject = {
+  postsFolder: string;
+  templateFile: string;
+  useYear: boolean;
+}
+
+type ConfigValidation = {
+  filePath: string;
+  isFolder: boolean;
+}
+
+type ProcessResult = {
+  result: boolean;
+  message: string;
+}
 
 const APP_NAME = 'Eleventy Category Files Generator';
 const APP_AUTHOR = 'by John M. Wargo (https://johnwargo.com)';
-const APP_CONFIG_FILE = '11ty-cat-pages.json';
-const DATA_FILE = 'category-meta.json';
+const APP_CONFIG_FILE = '11ty-np.json';
 const ELEVENTY_FILES = ['.eleventy.js', 'eleventy.config.js'];
-const TEMPLATE_FILE = '11ty-cat-pages.liquid';
+const TEMPLATE_FILE = '11ty-np.md';
 const UNCATEGORIZED_STRING = 'Uncategorized';
 // get CR and/or LF, accommodates DOS and Unix file formats
 const YAML_PATTERN = /---[\r\n].*?[\r\n]---/s
@@ -110,16 +120,14 @@ function getFileList(filePath: string, debugMode: boolean): String[] {
 }
 
 function buildCategoryList(
-  categories: CategoryRecord[],
   fileList: String[],
   debugMode: boolean
-): CategoryRecord[] {
-
+): string[] {
   if (debugMode) console.log();
   log.info('Building category list...');
+  let categories: string[] = [];
   for (var fileName of fileList) {
     log.debug(`Parsing ${fileName}`);
-
     if (path.extname(fileName.toString().toLocaleLowerCase()) !== '.json') {
       // Read the post file
       var postFile = fs.readFileSync(fileName.toString(), 'utf8');
@@ -140,18 +148,15 @@ function buildCategoryList(
       for (var cat of catArray) {
         var category = cat.trim();  // Remove leading and trailing spaces        
         // Does the category already exist in the list?
-        var index = categories.findIndex((item) => item.category === category);
+        var index = categories.findIndex((item) => item === category);
         if (index < 0) {
           log.info(`Found category: ${category}`);
           // add the category to the list
-          categories.push({ category: category, count: 1, description: '' });
-        } else {
-          // increment the count for the category
-          categories[index].count++;
+          categories.push(category);
         }
       }
     } else {
-      log.info(`Skipping ${fileName}`);
+      log.debug(`Skipping ${fileName}`);
     }
   }
   return categories;
@@ -183,14 +188,16 @@ function findFilePath(endPath: string, thePaths: string[]): string {
   return resStr;
 }
 
+// postsFolder: string;  
+// templateFile: string;
+// useYear: boolean;
+
 function buildConfigObject(): ConfigObject {
   const theFolders: string[] = ['.', 'src'];
   return {
-    categoryFolder: findFilePath('category', theFolders),
-    dataFileName: DATA_FILE,
-    dataFolder: findFilePath('_data', theFolders),
     postsFolder: findFilePath('posts', theFolders),
-    templateFileName: TEMPLATE_FILE
+    templateFile: TEMPLATE_FILE,
+    useYear: false
   }
 }
 
@@ -204,6 +211,7 @@ console.log('\n' + APP_AUTHOR);
 // do we have command-line arguments?
 const myArgs = process.argv.slice(2);
 const debugMode = myArgs.includes('-d');
+const doPopulate = myArgs.includes('-p');
 
 // set the logger log level
 log.level(debugMode ? log.DEBUG : log.INFO);
@@ -269,50 +277,31 @@ if (!fs.existsSync(configFilePath)) {
 
 let configData = fs.readFileSync(configFilePath, 'utf8');
 const configObject: ConfigObject = JSON.parse(configData);
-
-// we'll create this file when we write it
-// { filePath: configObject.dataFileName, isFolder: false },
 const validations: ConfigValidation[] = [
-  { filePath: configObject.categoryFolder, isFolder: true },
-  { filePath: configObject.dataFolder, isFolder: true },
   { filePath: configObject.postsFolder, isFolder: true },
-  { filePath: configObject.templateFileName, isFolder: false }
+  { filePath: configObject.templateFile, isFolder: false }
 ];
 
 validateConfig(validations)
   .then((res: ProcessResult) => {
     if (res.result) {
-
+      // get the file extension for the template file, we'll use it later
+      templateExtension = path.extname(configObject.templateFile);
       // read the template file
-      log.info(`Reading template file ${configObject.templateFileName}`);
-      let templateFile = fs.readFileSync(configObject.templateFileName, 'utf8');
-      // get the YAML frontmatter
+      log.info(`Reading template file ${configObject.templateFile}`);
+      let templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
+      // get the YAML front matter
       let templateDoc = YAML.parseAllDocuments(templateFile, { logLevel: 'silent' });
-      // convert the YAML frontmatter to a JSON object
-      let frontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
-      // at this point we have the frontmatter as a JSON object
-      if (debugMode) console.dir(frontmatter);
-      if (!frontmatter.pagination) {
+      // convert the YAML front matter to a JSON object
+      let templateFrontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
+      // at this point we have the front matter as a JSON object
+      if (debugMode) console.dir(templateFrontmatter);
+      if (!templateFrontmatter.pagination) {
         log.error('The template file does not contain the pagination frontmatter');
         process.exit(1);
       }
 
-      // get the file extension for the template file, we'll use it later
-      templateExtension = path.extname(configObject.templateFileName);
-
-      let categories: CategoryRecord[] = [];
-      // Read the existing categories file
-      let categoriesFile = path.join(process.cwd(), configObject.dataFolder, configObject.dataFileName);
-      if (fs.existsSync(categoriesFile)) {
-        log.info(`Reading existing categories file ${categoriesFile}`);
-        let categoryData = fs.readFileSync(categoriesFile, 'utf8');
-        categories = JSON.parse(categoryData);
-        // zero out all of the categories
-        if (categories.length > 0) categories.forEach((item) => item.count = 0);
-        if (debugMode) console.table(categories);
-      } else {
-        log.info('Category data file not found, will create a new one');
-      }
+      // at this point we have the whole template in templateFile and the front matter in templateFrontmatter    
 
       fileList = getFileList(configObject.postsFolder, debugMode);
       if (fileList.length < 1) {
@@ -324,73 +313,41 @@ validateConfig(validations)
       if (debugMode) console.dir(fileList);
 
       // build the categories list
-      categories = buildCategoryList(categories, fileList, debugMode);
+      let categories: string[] = buildCategoryList(fileList, debugMode);
       // do we have any categories?
-      if (categories.length > 0) {
-        // Delete any with a count of 0
-        log.info('Deleting unused categories (from previous runs)');
-        categories = categories.filter((item) => item.count > 0);
-      }
-      log.info(`Identified ${categories.length} categories`);
+      if (categories.length > 0) log.info(`Identified ${categories.length} categories`);
       categories = categories.sort(compareFunction);
       if (debugMode) console.table(categories);
 
-      log.info(`Writing categories list to ${categoriesFile}`);
-      try {
-        fs.writeFileSync(categoriesFile, JSON.stringify(categories, null, 2), 'utf8');
-      } catch (err) {
-        console.log('Error writing file');
-        console.error(err)
-        process.exit(1);
+
+      // Prompt for post title
+      let postTitle = 'Some Post Title'
+      //slugify post title
+
+      // prompt for post category
+
+      // update the front matter with the post title and category
+
+      // create the post file
+
+      if (doPopulate) {
+        // get bacon ipsum text
+
+        // append it to the end of the template file
+
       }
 
-      // empty the categories folder, just in case there are old categories there
-      const categoriesFolder = path.join(process.cwd(), configObject.categoryFolder);
-      log.debug(`Emptying categories folder: ${categoriesFolder}`);
-      fs.emptyDirSync(categoriesFolder);
+      // build the target file name
+      let targetFileName = path.join(process.cwd(), configObject.postsFolder);
+      if (configObject.useYear) {
+        targetFileName = path.join(targetFileName, new Date().getFullYear().toString());
+      }
+      targetFileName = path.join(targetFileName, postTitle.toLowerCase().replace(' ', '-'), templateExtension);
 
-      // create separate pages for each category
-      categories.forEach(function (item) {
-        // why would this ever happen?
-        if (item.category === "")
-          return;
+      // write the post file
 
-        log.debug(`\nProcessing category: ${item.category}`);
-        let pos1 = templateFile.search(YAML_PATTERN);
-        if (pos1 > -1) {
-          // We have a match for the YAML frontmatter (which makes sense)
-          // replace the category field in the frontmatter
-          frontmatter.category = item.category;
-          if (item.category == UNCATEGORIZED_STRING) {
-            // deal with uncategorized posts differently, categories field is blank
-            frontmatter.pagination.before = `function(paginationData, fullData){ return paginationData.filter((item) => item.data.categories.length == 0);}`
-          } else {
-            frontmatter.pagination.before = `function(paginationData, fullData){ return paginationData.filter((item) => item.data.categories.includes('${item.category}'));}`
-          }
 
-          // convert the frontmatter to JSON format
-          let tmpFrontmatter: string = JSON.stringify(frontmatter, null, 2);
-          // Remove quotes around the `before` callback function
-          tmpFrontmatter = tmpFrontmatter.replace(
-            `"${frontmatter.pagination.before}"`,
-            frontmatter.pagination.before
-          );
-          // add the JSON frontmatter delimiters
-          tmpFrontmatter = `---js\n${tmpFrontmatter}\n---`;
-          // replace the content in the file 
-          let newFrontmatter = templateFile.replace(YAML_PATTERN, tmpFrontmatter);
-          // build the output file name
-          let outputFileName: string = path.join(
-            categoriesFolder,
-            item.category.toLowerCase().replaceAll(' ', '-') + templateExtension
-          );
-          log.info(`Writing category page: ${outputFileName}`);
-          fs.writeFileSync(outputFileName, newFrontmatter);
-        } else {
-          log.error('Unable to match frontmatter in template file');
-          process.exit(1);
-        }
-      });
+
     } else {
       log.error(res.message);
       process.exit(1);

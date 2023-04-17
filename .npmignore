@@ -6,5 +6,5 @@ src/
 package-lock.json
 tsconfig.json
 .eleventy.js
-11ty-cat-pages.json
-11ty-cat-pages.liquid
+11ty-np.json
+11ty-np.md

@@ -5,4 +5,4 @@ src/
 # files
 package-lock.json
 .eleventy.js
-11ty-cat-pages.json
+11ty-np.json
