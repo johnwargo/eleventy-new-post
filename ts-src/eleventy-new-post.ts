@@ -14,6 +14,7 @@ import path from 'path';
 
 // Third-party modules
 import boxen from 'boxen';
+import prompts from 'prompts';
 import YAML from 'yaml'
 import yesno from 'yesno';
 //@ts-ignore
@@ -230,38 +231,38 @@ if (!fs.existsSync(configFile)) {
   log.info('Rather than using a bunch of command-line arguments, this tool uses a configuration file instead.');
   log.info('In the next step, the module will automatically create the configuration file for you.');
   log.info('Once it completes, you can edit the configuration file to change the default values and execute the command again.');
-  await yesno({
-    question: '\nCreate configuration file? Enter yes or no:',
-    defaultValue: false,
-    yesValues: ['Yes'],
-    noValues: ['No']
-  }).then((confirmExport: boolean) => {
-    if (confirmExport) {
 
-      // create the configuration file  
-      let configObject = buildConfigObject();
-      if (debugMode) console.dir(configObject);
-      let outputStr = JSON.stringify(configObject, null, 2);
-      // replace the backslashes with forward slashes
-      // do this so on windows it would have double backslashes
-      outputStr = outputStr.replace(/\\/g, '/');
-      outputStr = outputStr.replaceAll('//', '/');
-      log.info(`Writing configuration file ${APP_CONFIG_FILE}`);
-      try {
-        fs.writeFileSync(path.join('.', APP_CONFIG_FILE), outputStr, 'utf8');
-        log.info('Output file written successfully');
-        log.info('\nEdit the configuration with the correct values for this project then execute the command again.');
-      } catch (err: any) {
-        log.error(`Unable to write to ${APP_CONFIG_FILE}`);
-        console.dir(err);
-        process.exit(1);
-      }
-      process.exit(0);
-    } else {
-      log.info('Exiting...');
-      process.exit(0);
-    }
+  console.log();
+  let response = await prompts({
+    type: 'confirm',
+    name: 'continue',
+    message: 'Create configuration file?',
+    initial: true
   });
+  if (response.continue) {
+    // create the configuration file  
+    let configObject = buildConfigObject();
+    if (debugMode) console.dir(configObject);
+    let outputStr = JSON.stringify(configObject, null, 2);
+    // replace the backslashes with forward slashes
+    // do this so on windows it would have double backslashes
+    outputStr = outputStr.replace(/\\/g, '/');
+    outputStr = outputStr.replaceAll('//', '/');
+    log.info(`Writing configuration file ${APP_CONFIG_FILE}`);
+    try {
+      fs.writeFileSync(path.join('.', APP_CONFIG_FILE), outputStr, 'utf8');
+      log.info('Output file written successfully');
+      log.info('\nEdit the configuration with the correct values for this project then execute the command again.');
+    } catch (err: any) {
+      log.error(`Unable to write to ${APP_CONFIG_FILE}`);
+      console.dir(err);
+      process.exit(1);
+    }
+    process.exit(0);
+  } else {
+    log.info('Exiting...');
+    process.exit(0);
+  }
 }
 
 // Read the config file
@@ -280,7 +281,7 @@ const validations: ConfigValidation[] = [
 ];
 
 validateConfig(validations)
-  .then((res: ProcessResult) => {
+  .then(async (res: ProcessResult) => {
     if (res.result) {
       // get the file extension for the template file, we'll use it later
       templateExtension = path.extname(configObject.templateFile);
@@ -297,7 +298,6 @@ validateConfig(validations)
         log.error('The template file does not contain any YAML front matter, exiting');
         process.exit(1);
       }
-
       // at this point we have the whole template in templateFile and the front matter in templateFrontmatter    
 
       fileList = getFileList(configObject.postsFolder, debugMode);
@@ -305,7 +305,6 @@ validateConfig(validations)
         log.error('\nNo Post files found in the project, exiting');
         process.exit(0);
       }
-
       log.debug(`Located ${fileList.length} post files`);
       if (debugMode) console.dir(fileList);
 
@@ -316,12 +315,31 @@ validateConfig(validations)
       categories = categories.sort(compareFunction);
       if (debugMode) console.table(categories);
 
+      let categoryList: any[] = [];
+      categories.map((item: string) => {
+        categoryList.push({ title: item, value: item });
+      });
 
-      // Prompt for post title
-      let postTitle = 'Some Post Title'
-      //slugify post title
+      // Prompt for post title and category
+      const questions: any[] = [
+        {
+          type: 'text',
+          name: 'postTitle',
+          message: 'Enter a title for the post:'
+        }, {
+          type: 'select',
+          name: 'postCategory',
+          message: 'Select an article category from the list:',
+          choices: categoryList,
+          initial: 0
+        }];
+      console.log();
+      let response = await prompts(questions);
 
-      // prompt for post category
+      let postTitle: string = response.postTitle;
+      log.debug(`Title: ${postTitle}`);
+      let postCategory: string = response.postCategory;
+      log.debug(`Selected category: ${postCategory}`);
 
       // update the front matter with the post title and category
 
