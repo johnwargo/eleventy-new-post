@@ -4,8 +4,9 @@
  * Eleventy New Post
  * by John M. Wargo (https://johnwargo.com)
  * Created March 20, 2023
+ * 
+ * Copied from the 11ty-cat-pages module
  */
-
 
 // node modules
 import fs from 'fs-extra';
@@ -114,7 +115,7 @@ function getAllFiles(dirPath: string, arrayOfFiles: string[]) {
 
 function getFileList(filePath: string, debugMode: boolean): String[] {
   if (debugMode) console.log();
-  log.info('Building file list...');
+  log.debug('Building file list...');
   log.debug(`filePath: ${filePath}`);
   return getAllFiles(filePath, []);
 }
@@ -124,7 +125,7 @@ function buildCategoryList(
   debugMode: boolean
 ): string[] {
   if (debugMode) console.log();
-  log.info('Building category list...');
+  log.debug('Building category list...');
   let categories: string[] = [];
   for (var fileName of fileList) {
     log.debug(`Parsing ${fileName}`);
@@ -134,7 +135,7 @@ function buildCategoryList(
       // Get the first YAML block from the file
       var YAMLDoc: any[] = YAML.parseAllDocuments(postFile, { logLevel: 'silent' });
       var content = YAMLDoc[0].toJSON();
-      if (debugMode) console.dir(content);
+      // if (debugMode) console.dir(content);
       // Does the post have a category?
       if (content.categories) {
         var categoriesString = content.categories.toString();
@@ -150,7 +151,7 @@ function buildCategoryList(
         // Does the category already exist in the list?
         var index = categories.findIndex((item) => item === category);
         if (index < 0) {
-          log.info(`Found category: ${category}`);
+          log.debug(`Found category: ${category}`);
           // add the category to the list
           categories.push(category);
         }
@@ -187,10 +188,6 @@ function findFilePath(endPath: string, thePaths: string[]): string {
   }
   return resStr;
 }
-
-// postsFolder: string;  
-// templateFile: string;
-// useYear: boolean;
 
 function buildConfigObject(): ConfigObject {
   const theFolders: string[] = ['.', 'src'];
@@ -296,8 +293,8 @@ validateConfig(validations)
       let templateFrontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
       // at this point we have the front matter as a JSON object
       if (debugMode) console.dir(templateFrontmatter);
-      if (!templateFrontmatter.pagination) {
-        log.error('The template file does not contain the pagination frontmatter');
+      if (!templateFrontmatter) {
+        log.error('The template file does not contain any YAML front matter, exiting');
         process.exit(1);
       }
 
@@ -309,13 +306,13 @@ validateConfig(validations)
         process.exit(0);
       }
 
-      log.info(`Located ${fileList.length} files`);
+      log.debug(`Located ${fileList.length} post files`);
       if (debugMode) console.dir(fileList);
 
       // build the categories list
       let categories: string[] = buildCategoryList(fileList, debugMode);
       // do we have any categories?
-      if (categories.length > 0) log.info(`Identified ${categories.length} categories`);
+      if (categories.length > 0) log.info(`Found ${categories.length} categories`);
       categories = categories.sort(compareFunction);
       if (debugMode) console.table(categories);
 

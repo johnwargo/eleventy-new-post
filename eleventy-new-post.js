@@ -73,14 +73,14 @@ function getAllFiles(dirPath, arrayOfFiles) {
 function getFileList(filePath, debugMode) {
     if (debugMode)
         console.log();
-    log.info('Building file list...');
+    log.debug('Building file list...');
     log.debug(`filePath: ${filePath}`);
     return getAllFiles(filePath, []);
 }
 function buildCategoryList(fileList, debugMode) {
     if (debugMode)
         console.log();
-    log.info('Building category list...');
+    log.debug('Building category list...');
     let categories = [];
     for (var fileName of fileList) {
         log.debug(`Parsing ${fileName}`);
@@ -88,8 +88,6 @@ function buildCategoryList(fileList, debugMode) {
             var postFile = fs.readFileSync(fileName.toString(), 'utf8');
             var YAMLDoc = YAML.parseAllDocuments(postFile, { logLevel: 'silent' });
             var content = YAMLDoc[0].toJSON();
-            if (debugMode)
-                console.dir(content);
             if (content.categories) {
                 var categoriesString = content.categories.toString();
             }
@@ -101,7 +99,7 @@ function buildCategoryList(fileList, debugMode) {
                 var category = cat.trim();
                 var index = categories.findIndex((item) => item === category);
                 if (index < 0) {
-                    log.info(`Found category: ${category}`);
+                    log.debug(`Found category: ${category}`);
                     categories.push(category);
                 }
             }
@@ -218,8 +216,8 @@ validateConfig(validations)
         let templateFrontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
         if (debugMode)
             console.dir(templateFrontmatter);
-        if (!templateFrontmatter.pagination) {
-            log.error('The template file does not contain the pagination frontmatter');
+        if (!templateFrontmatter) {
+            log.error('The template file does not contain any YAML front matter, exiting');
             process.exit(1);
         }
         fileList = getFileList(configObject.postsFolder, debugMode);
@@ -227,12 +225,12 @@ validateConfig(validations)
             log.error('\nNo Post files found in the project, exiting');
             process.exit(0);
         }
-        log.info(`Located ${fileList.length} files`);
+        log.debug(`Located ${fileList.length} post files`);
         if (debugMode)
             console.dir(fileList);
         let categories = buildCategoryList(fileList, debugMode);
         if (categories.length > 0)
-            log.info(`Identified ${categories.length} categories`);
+            log.info(`Found ${categories.length} categories`);
         categories = categories.sort(compareFunction);
         if (debugMode)
             console.table(categories);
