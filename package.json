@@ -1,0 +1,37 @@
+{
+  "name": "eleventy-new-post",
+  "version": "0.0.0",
+  "description": "Generates a new Elevety site post (with options)",
+  "author": "John M. Wargo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johnwargo/eleventy-new-post.git"
+  },
+  "type": "module",
+  "main": "eleventy-new-post.js",
+  "bin": {
+    "11ty-np": "eleventy-new-post.js"
+  },
+  "keywords": [
+    "node",
+    "eleventy"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsc && node eleventy-new-post.js -d",
+    "start": "tsc && node eleventy-new-post.js"
+  },
+  "dependencies": {
+    "boxen": "^7.0.2",
+    "cli-logger": "^0.5.40",
+    "fs-extra": "^11.1.1",
+    "yaml": "^2.2.1",
+    "yesno": "^0.4.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.1",
+    "@types/node": "^18.15.5",
+    "eleventy": "^1.0.6"
+  }
+}

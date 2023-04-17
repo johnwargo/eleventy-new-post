@@ -1,0 +1,10 @@
+# folders
+ts-src/
+src/
+
+# files
+package-lock.json
+tsconfig.json
+.eleventy.js
+11ty-cat-pages.json
+11ty-cat-pages.liquid

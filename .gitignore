@@ -1,0 +1,8 @@
+# Folders
+node_modules/
+src/
+
+# files
+package-lock.json
+.eleventy.js
+11ty-cat-pages.json
