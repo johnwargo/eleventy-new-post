@@ -89,9 +89,7 @@ function compareFunction(a: any, b: any) {
 }
 
 async function validateConfig(validations: ConfigValidation[]): Promise<ProcessResult> {
-
   var processResult: ProcessResult;
-
   processResult = {
     result: true, message: 'Configuration file errors:\n'
   };
@@ -148,7 +146,6 @@ function buildCategoryList(
       // Get the first YAML block from the file
       var YAMLDoc: any[] = YAML.parseAllDocuments(postFile, { logLevel: 'silent' });
       var content = YAMLDoc[0].toJSON();
-      // if (debugMode) console.dir(content);
       // Does the post have a category?
       if (content.categories) {
         var categoriesString = content.categories.toString();
@@ -165,7 +162,6 @@ function buildCategoryList(
         var index = categories.findIndex((item) => item.title === category);
         if (index < 0) {
           log.debug(`Found category: ${category}`);
-          // add the category to the list
           if (category === UNCATEGORIZED_STRING) {
             categories.push({ title: category, value: '' });
           } else {
