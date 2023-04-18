@@ -1,5 +1,6 @@
 ---
 layout: default
 title: 
-category: 
+date:
+categories: 
 ---

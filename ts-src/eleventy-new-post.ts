@@ -5,8 +5,10 @@
  * by John M. Wargo (https://johnwargo.com)
  * Created March 20, 2023
  * 
- * Copied from the 11ty-cat-pages module
+ * Copied from the 11ty-cat-pages module.
  */
+
+// TODO: Add support for multiselect categories
 
 // node modules
 import fs from 'fs-extra';
@@ -28,6 +30,7 @@ type ConfigObject = {
   postsFolder: string;
   templateFile: string;
   useYear: boolean;
+  paragraphCount: number;
 }
 
 type ConfigValidation = {
@@ -52,17 +55,24 @@ type Choice = {
 const APP_NAME = '11ty New Post';
 const APP_AUTHOR = 'by John M. Wargo (https://johnwargo.com)';
 const APP_CONFIG_FILE = '11ty-np.json';
+const CATEGORIES_STR = 'categories';
+const DEFAULT_PARAGRAPH_COUNT = 4;
 const ELEVENTY_FILES = ['.eleventy.js', 'eleventy.config.js'];
 const TEMPLATE_FILE = '11ty-np.md';
 const UNCATEGORIZED_STRING = 'Uncategorized';
 const YAML_PATTERN = /(?<=---[\r\n]).*?(?=[\r\n]---)/s
 
+var categories: Choice[] = [];
 var fileList: String[] = [];
 var templateExtension: string;
 
 // ====================================
 // Functions
 // ====================================
+
+function zeroPad(tmpVal: number, numChars: number = 2): string {
+  return tmpVal.toString().padStart(numChars, '0');
+}
 
 function checkEleventyProject(): boolean {
   log.debug('Validating project folder');
@@ -106,6 +116,12 @@ async function validateConfig(validations: ConfigValidation[]): Promise<ProcessR
       }
     }
   }
+
+  if (!configObject.paragraphCount || (configObject.paragraphCount < 1 && configObject.paragraphCount > 100)) {
+    processResult.result = false;
+    processResult.message += `\nThe 'paragraphCount' value must be greater than 0 and less than 101.`;
+  }
+
   return processResult;
 }
 
@@ -145,23 +161,20 @@ function buildCategoryList(
       var YAMLDoc: any[] = YAML.parseAllDocuments(postFile, { logLevel: 'silent' });
       var content = YAMLDoc[0].toJSON();
       // Does the post have a category?
-      if (content.categories) {
-        var categoriesString = content.categories.toString();
-      } else {
-        // handle posts that don't have a category
-        categoriesString = UNCATEGORIZED_STRING;
-      }
-      // split the category list into an array
+      var categoriesString: string = (content.categories) ? content.categories.toString() : '';
+      if (categoriesString.length < 1) categoriesString = UNCATEGORIZED_STRING;
+      // split the category list into an array, just in case
       var catArray = categoriesString.split(',');
       // loop through the array
       for (var cat of catArray) {
-        var category = cat.trim();  // Remove leading and trailing spaces        
+        // Remove leading and trailing spaces
+        var category = cat.trim();
         // Does the category already exist in the list?
-        var index = categories.findIndex((item) => item.title === category);
-        if (index < 0) {
+        var idx = categories.findIndex((item) => item.title === category);
+        if (idx < 0) {
           log.debug(`Found category: ${category}`);
           if (category === UNCATEGORIZED_STRING) {
-            categories.push({ title: category, value: '' });
+            categories.push({ title: UNCATEGORIZED_STRING, value: '' });
           } else {
             categories.push({ title: category, value: category });
           }
@@ -170,10 +183,6 @@ function buildCategoryList(
     } else {
       log.debug(`Skipping ${fileName}`);
     }
-  }
-  // Make sure uncategorized is in the list
-  if (!categories.some(code => code.title === UNCATEGORIZED_STRING)) {
-    categories.push({ title: UNCATEGORIZED_STRING, value: '' });
   }
   return categories;
 }
@@ -209,7 +218,8 @@ function buildConfigObject(): ConfigObject {
   return {
     postsFolder: findFilePath('posts', theFolders),
     templateFile: TEMPLATE_FILE,
-    useYear: false
+    useYear: false,
+    paragraphCount: DEFAULT_PARAGRAPH_COUNT
   }
 }
 
@@ -297,6 +307,7 @@ const validations: ConfigValidation[] = [
 validateConfig(validations)
   .then(async (res: ProcessResult) => {
     if (res.result) {
+
       // get the file extension for the template file, we'll use it later
       templateExtension = path.extname(configObject.templateFile);
       // read the template file
@@ -315,45 +326,52 @@ validateConfig(validations)
       // at this point we have the whole template in templateFile and the front matter in templateFrontmatter    
 
       fileList = getFileList(configObject.postsFolder, debugMode);
-      if (fileList.length < 1) {
-        log.error('\nNo Post files found in the project, exiting');
-        process.exit(0);
-      }
       log.debug(`Located ${fileList.length} post files`);
-      if (debugMode) console.dir(fileList);
+      if (fileList.length > 0) {
+        if (debugMode) console.dir(fileList);
+        // build the categories list
+        categories = buildCategoryList(fileList, debugMode);
+        // do we have any categories?
+        if (categories.length > 0) log.debug(`Found ${categories.length} categories`);
+        categories = categories.sort(compareFunction);
+        if (debugMode) console.table(categories);
+      }
 
-      // build the categories list
-      let categories: Choice[] = buildCategoryList(fileList, debugMode);
-      // do we have any categories?
-      if (categories.length > 0) log.debug(`Found ${categories.length} categories`);
-      categories = categories.sort(compareFunction);
-      if (debugMode) console.table(categories);
-
-      // Prompt for post title and category
+      // The questions array with the title prompt only, 
       const questions: any[] = [
         {
           type: 'text',
           name: 'postTitle',
           message: 'Enter a title for the post:'
-        }, {
-          type: 'select',
-          name: 'postCategory',
-          message: 'Select an article category from the list:',
-          choices: categories,
-          initial: 0
         }];
-      console.log();
+      // define this one separately just in case we need it
+      const categoryPrompt: any = {
+        type: 'select',
+        name: 'postCategory',
+        message: 'Select an article category from the list:',
+        choices: categories,
+        initial: 0
+      }
+      // If we have categories to pick from, add the category prompt to the questions array
+      if (categories.length > 0) questions.push(categoryPrompt);
+
+      console.log();  // throw in a blank line on the console
       let response = await prompts(questions);
 
-      if (!response.postTitle) {
+      // Did the user cancel?
+      if (!response.postTitle || (questions.length > 1 && !response.postCategory)) {
         log.info('Exiting...');
         process.exit(0);
       }
 
       let postTitle: string = response.postTitle;
       log.debug(`Title: ${postTitle}`);
-      let postCategory: string = response.postCategory;
+      // Sets category to uncategorized if there are no categories to pick from
+      let postCategory: string = response.postCategory ? response.postCategory : '';
       log.debug(`Selected category: ${postCategory}`);
+
+      let catList: string[] = [];
+      if (postCategory.length > 0) catList.push(postCategory);
 
       // build the target file name
       let outputFile = path.join(process.cwd(), configObject.postsFolder);
@@ -368,11 +386,14 @@ validateConfig(validations)
       }
 
       // update the front matter with the post title and category
+      let tmpDate = new Date();    
+      templateFrontmatter.date = `${tmpDate.getFullYear()}-${zeroPad(tmpDate.getMonth() + 1)}-${zeroPad(tmpDate.getDate())}`;
       templateFrontmatter.title = postTitle;
-      templateFrontmatter.category = postCategory;
+      templateFrontmatter.categories = catList;
+
       // add the front matter to the file 
       let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
-      tmpFrontmatter = tmpFrontmatter.replace('category: ""', 'category:');
+      tmpFrontmatter = tmpFrontmatter.replace('${CATEGORIES_STR}: ""', '${CATEGORIES_STR}:');
       // remove the extra carriage return from the end of the frontmatter
       tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
       // make a copy of the template file
@@ -381,7 +402,7 @@ validateConfig(validations)
       newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
       if (doPopulate) {
         log.info('\nGetting bacon ipsum text (this may take a few seconds)...');
-        let response: Response = await fetch('https://baconipsum.com/api/?type=all-meat&paras=4&start-with-lorem=1');
+        let response: Response = await fetch(`https://baconipsum.com/api/?type=all-meat&paras=${configObject.paragraphCount}&start-with-lorem=1`);
         let fillerText = await response.json();
         for (const item of fillerText) newFile += item + '\n\n';
         log.info(`Writing content to ${outputFile}`);

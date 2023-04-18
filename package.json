@@ -19,7 +19,8 @@
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsc && node eleventy-new-post.js -d -p",
+    "dev1": "tsc && node eleventy-new-post.js -d",
+    "dev2": "tsc && node eleventy-new-post.js -d -p",
     "start": "tsc && node eleventy-new-post.js"
   },
   "dependencies": {

@@ -9,12 +9,18 @@ var log = logger();
 const APP_NAME = '11ty New Post';
 const APP_AUTHOR = 'by John M. Wargo (https://johnwargo.com)';
 const APP_CONFIG_FILE = '11ty-np.json';
+const CATEGORIES_STR = 'categories';
+const DEFAULT_PARAGRAPH_COUNT = 4;
 const ELEVENTY_FILES = ['.eleventy.js', 'eleventy.config.js'];
 const TEMPLATE_FILE = '11ty-np.md';
 const UNCATEGORIZED_STRING = 'Uncategorized';
 const YAML_PATTERN = /(?<=---[\r\n]).*?(?=[\r\n]---)/s;
+var categories = [];
 var fileList = [];
 var templateExtension;
+function zeroPad(tmpVal, numChars = 2) {
+    return tmpVal.toString().padStart(numChars, '0');
+}
 function checkEleventyProject() {
     log.debug('Validating project folder');
     let result = false;
@@ -55,6 +61,10 @@ async function validateConfig(validations) {
             }
         }
     }
+    if (!configObject.paragraphCount || (configObject.paragraphCount < 1 && configObject.paragraphCount > 100)) {
+        processResult.result = false;
+        processResult.message += `\nThe 'paragraphCount' value must be greater than 0 and less than 101.`;
+    }
     return processResult;
 }
 function getAllFiles(dirPath, arrayOfFiles) {
@@ -88,20 +98,17 @@ function buildCategoryList(fileList, debugMode) {
             var postFile = fs.readFileSync(fileName.toString(), 'utf8');
             var YAMLDoc = YAML.parseAllDocuments(postFile, { logLevel: 'silent' });
             var content = YAMLDoc[0].toJSON();
-            if (content.categories) {
-                var categoriesString = content.categories.toString();
-            }
-            else {
+            var categoriesString = (content.categories) ? content.categories.toString() : '';
+            if (categoriesString.length < 1)
                 categoriesString = UNCATEGORIZED_STRING;
-            }
             var catArray = categoriesString.split(',');
             for (var cat of catArray) {
                 var category = cat.trim();
-                var index = categories.findIndex((item) => item.title === category);
-                if (index < 0) {
+                var idx = categories.findIndex((item) => item.title === category);
+                if (idx < 0) {
                     log.debug(`Found category: ${category}`);
                     if (category === UNCATEGORIZED_STRING) {
-                        categories.push({ title: category, value: '' });
+                        categories.push({ title: UNCATEGORIZED_STRING, value: '' });
                     }
                     else {
                         categories.push({ title: category, value: category });
@@ -112,9 +119,6 @@ function buildCategoryList(fileList, debugMode) {
         else {
             log.debug(`Skipping ${fileName}`);
         }
-    }
-    if (!categories.some(code => code.title === UNCATEGORIZED_STRING)) {
-        categories.push({ title: UNCATEGORIZED_STRING, value: '' });
     }
     return categories;
 }
@@ -147,7 +151,8 @@ function buildConfigObject() {
     return {
         postsFolder: findFilePath('posts', theFolders),
         templateFile: TEMPLATE_FILE,
-        useYear: false
+        useYear: false,
+        paragraphCount: DEFAULT_PARAGRAPH_COUNT
     };
 }
 console.log(boxen(APP_NAME, { padding: 1 }));
@@ -229,42 +234,46 @@ validateConfig(validations)
             process.exit(1);
         }
         fileList = getFileList(configObject.postsFolder, debugMode);
-        if (fileList.length < 1) {
-            log.error('\nNo Post files found in the project, exiting');
-            process.exit(0);
-        }
         log.debug(`Located ${fileList.length} post files`);
-        if (debugMode)
-            console.dir(fileList);
-        let categories = buildCategoryList(fileList, debugMode);
-        if (categories.length > 0)
-            log.debug(`Found ${categories.length} categories`);
-        categories = categories.sort(compareFunction);
-        if (debugMode)
-            console.table(categories);
+        if (fileList.length > 0) {
+            if (debugMode)
+                console.dir(fileList);
+            categories = buildCategoryList(fileList, debugMode);
+            if (categories.length > 0)
+                log.debug(`Found ${categories.length} categories`);
+            categories = categories.sort(compareFunction);
+            if (debugMode)
+                console.table(categories);
+        }
         const questions = [
             {
                 type: 'text',
                 name: 'postTitle',
                 message: 'Enter a title for the post:'
-            }, {
-                type: 'select',
-                name: 'postCategory',
-                message: 'Select an article category from the list:',
-                choices: categories,
-                initial: 0
             }
         ];
+        const categoryPrompt = {
+            type: 'select',
+            name: 'postCategory',
+            message: 'Select an article category from the list:',
+            choices: categories,
+            initial: 0
+        };
+        if (categories.length > 0)
+            questions.push(categoryPrompt);
         console.log();
         let response = await prompts(questions);
-        if (!response.postTitle) {
+        if (!response.postTitle || (questions.length > 1 && !response.postCategory)) {
             log.info('Exiting...');
             process.exit(0);
         }
         let postTitle = response.postTitle;
         log.debug(`Title: ${postTitle}`);
-        let postCategory = response.postCategory;
+        let postCategory = response.postCategory ? response.postCategory : '';
         log.debug(`Selected category: ${postCategory}`);
+        let catList = [];
+        if (postCategory.length > 0)
+            catList.push(postCategory);
         let outputFile = path.join(process.cwd(), configObject.postsFolder);
         if (configObject.useYear) {
             outputFile = path.join(outputFile, new Date().getFullYear().toString());
@@ -275,16 +284,18 @@ validateConfig(validations)
             log.info(`File ${outputFile} already exists, exiting`);
             process.exit(1);
         }
+        let tmpDate = new Date();
+        templateFrontmatter.date = `${tmpDate.getFullYear()}-${zeroPad(tmpDate.getMonth() + 1)}-${zeroPad(tmpDate.getDate())}`;
         templateFrontmatter.title = postTitle;
-        templateFrontmatter.category = postCategory;
+        templateFrontmatter.categories = catList;
         let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
-        tmpFrontmatter = tmpFrontmatter.replace('category: ""', 'category:');
+        tmpFrontmatter = tmpFrontmatter.replace('${CATEGORIES_STR}: ""', '${CATEGORIES_STR}:');
         tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
         let newFile = templateFile.slice();
         newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
         if (doPopulate) {
             log.info('\nGetting bacon ipsum text (this may take a few seconds)...');
-            let response = await fetch('https://baconipsum.com/api/?type=all-meat&paras=4&start-with-lorem=1');
+            let response = await fetch(`https://baconipsum.com/api/?type=all-meat&paras=${configObject.paragraphCount}&start-with-lorem=1`);
             let fillerText = await response.json();
             for (const item of fillerText)
                 newFile += item + '\n\n';
