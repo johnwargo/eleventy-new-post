@@ -8,6 +8,8 @@
  * Copied from the 11ty-cat-pages module
  */
 
+// TODO: Remove empty quotes from front matter for empty categories
+
 // node modules
 import fs from 'fs-extra';
 import path from 'path';
@@ -16,7 +18,6 @@ import path from 'path';
 import boxen from 'boxen';
 import prompts from 'prompts';
 import YAML from 'yaml'
-import yesno from 'yesno';
 //@ts-ignore
 import logger from 'cli-logger';
 var log = logger();
@@ -70,10 +71,10 @@ function checkEleventyProject(): boolean {
 }
 
 function compareFunction(a: any, b: any) {
-  if (a.category < b.category) {
+  if (a.title < b.title) {
     return -1;
   }
-  if (a.category > b.category) {
+  if (a.title > b.title) {
     return 1;
   }
   return 0;
