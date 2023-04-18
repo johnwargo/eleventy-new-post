@@ -22,6 +22,10 @@ import YAML from 'yaml'
 import logger from 'cli-logger';
 var log = logger();
 
+// ====================================
+// Types
+// ====================================
+
 type ConfigObject = {
   postsFolder: string;
   templateFile: string;
@@ -42,6 +46,10 @@ type Choice = {
   title: string;
   value: string;
 }
+
+// ====================================
+// Constants and Variables
+// ====================================
 
 const APP_NAME = 'Eleventy Category Files Generator';
 const APP_AUTHOR = 'by John M. Wargo (https://johnwargo.com)';
