@@ -12,7 +12,7 @@ const APP_CONFIG_FILE = '11ty-np.json';
 const ELEVENTY_FILES = ['.eleventy.js', 'eleventy.config.js'];
 const TEMPLATE_FILE = '11ty-np.md';
 const UNCATEGORIZED_STRING = 'Uncategorized';
-const YAML_PATTERN = /---[\r\n].*?[\r\n]---/s;
+const YAML_PATTERN = /(?<=---[\r\n]).*?(?=[\r\n]---)/s;
 var fileList = [];
 var templateExtension;
 function checkEleventyProject() {
@@ -97,16 +97,24 @@ function buildCategoryList(fileList, debugMode) {
             var catArray = categoriesString.split(',');
             for (var cat of catArray) {
                 var category = cat.trim();
-                var index = categories.findIndex((item) => item === category);
+                var index = categories.findIndex((item) => item.title === category);
                 if (index < 0) {
                     log.debug(`Found category: ${category}`);
-                    categories.push(category);
+                    if (category === UNCATEGORIZED_STRING) {
+                        categories.push({ title: category, value: '' });
+                    }
+                    else {
+                        categories.push({ title: category, value: category });
+                    }
                 }
             }
         }
         else {
             log.debug(`Skipping ${fileName}`);
         }
+    }
+    if (!categories.some(code => code.title === UNCATEGORIZED_STRING)) {
+        categories.push({ title: UNCATEGORIZED_STRING, value: '' });
     }
     return categories;
 }
@@ -211,7 +219,7 @@ validateConfig(validations)
     if (res.result) {
         templateExtension = path.extname(configObject.templateFile);
         log.info(`Reading template file ${configObject.templateFile}`);
-        let templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
+        const templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
         let templateDoc = YAML.parseAllDocuments(templateFile, { logLevel: 'silent' });
         let templateFrontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
         if (debugMode)
@@ -234,10 +242,6 @@ validateConfig(validations)
         categories = categories.sort(compareFunction);
         if (debugMode)
             console.table(categories);
-        let categoryList = [];
-        categories.map((item) => {
-            categoryList.push({ title: item, value: item });
-        });
         const questions = [
             {
                 type: 'text',
@@ -247,7 +251,7 @@ validateConfig(validations)
                 type: 'select',
                 name: 'postCategory',
                 message: 'Select an article category from the list:',
-                choices: categoryList,
+                choices: categories,
                 initial: 0
             }
         ];
@@ -257,13 +261,23 @@ validateConfig(validations)
         log.debug(`Title: ${postTitle}`);
         let postCategory = response.postCategory;
         log.debug(`Selected category: ${postCategory}`);
+        templateFrontmatter.title = postTitle;
+        templateFrontmatter.category = postCategory;
+        let newFile = templateFile.slice();
+        console.log(newFile);
+        let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
+        tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
+        newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
         if (doPopulate) {
+            newFile += 'this is some extra text';
         }
-        let targetFileName = path.join(process.cwd(), configObject.postsFolder);
+        let outputFile = path.join(process.cwd(), configObject.postsFolder);
         if (configObject.useYear) {
-            targetFileName = path.join(targetFileName, new Date().getFullYear().toString());
+            outputFile = path.join(outputFile, new Date().getFullYear().toString());
         }
-        targetFileName = path.join(targetFileName, postTitle.toLowerCase().replace(' ', '-'), templateExtension);
+        outputFile = path.join(outputFile, postTitle.toLowerCase().replaceAll(' ', '-') + templateExtension);
+        log.info(`Writing changes to ${outputFile}`);
+        fs.writeFileSync(outputFile, newFile, 'utf8');
     }
     else {
         log.error(res.message);

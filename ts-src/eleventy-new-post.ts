@@ -37,15 +37,18 @@ type ProcessResult = {
   message: string;
 }
 
+type Choice = {
+  title: string;
+  value: string;
+}
+
 const APP_NAME = 'Eleventy Category Files Generator';
 const APP_AUTHOR = 'by John M. Wargo (https://johnwargo.com)';
 const APP_CONFIG_FILE = '11ty-np.json';
 const ELEVENTY_FILES = ['.eleventy.js', 'eleventy.config.js'];
 const TEMPLATE_FILE = '11ty-np.md';
 const UNCATEGORIZED_STRING = 'Uncategorized';
-// get CR and/or LF, accommodates DOS and Unix file formats
-const YAML_PATTERN = /---[\r\n].*?[\r\n]---/s
-// https://stackoverflow.com/questions/75845110/javascript-regex-to-replace-yaml-frontmatter/75845227#75845227
+const YAML_PATTERN = /(?<=---[\r\n]).*?(?=[\r\n]---)/s
 
 var fileList: String[] = [];
 var templateExtension: string;
@@ -124,10 +127,10 @@ function getFileList(filePath: string, debugMode: boolean): String[] {
 function buildCategoryList(
   fileList: String[],
   debugMode: boolean
-): string[] {
+): Choice[] {
   if (debugMode) console.log();
   log.debug('Building category list...');
-  let categories: string[] = [];
+  let categories: Choice[] = [];
   for (var fileName of fileList) {
     log.debug(`Parsing ${fileName}`);
     if (path.extname(fileName.toString().toLocaleLowerCase()) !== '.json') {
@@ -150,16 +153,24 @@ function buildCategoryList(
       for (var cat of catArray) {
         var category = cat.trim();  // Remove leading and trailing spaces        
         // Does the category already exist in the list?
-        var index = categories.findIndex((item) => item === category);
+        var index = categories.findIndex((item) => item.title === category);
         if (index < 0) {
           log.debug(`Found category: ${category}`);
           // add the category to the list
-          categories.push(category);
+          if (category === UNCATEGORIZED_STRING) {
+            categories.push({ title: category, value: '' });
+          } else {
+            categories.push({ title: category, value: category });
+          }
         }
       }
     } else {
       log.debug(`Skipping ${fileName}`);
     }
+  }
+  // Make sure uncategorized is in the list
+  if (!categories.some(code => code.title === UNCATEGORIZED_STRING)) {
+    categories.push({ title: UNCATEGORIZED_STRING, value: '' });
   }
   return categories;
 }
@@ -287,7 +298,7 @@ validateConfig(validations)
       templateExtension = path.extname(configObject.templateFile);
       // read the template file
       log.info(`Reading template file ${configObject.templateFile}`);
-      let templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
+      const templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
       // get the YAML front matter
       let templateDoc = YAML.parseAllDocuments(templateFile, { logLevel: 'silent' });
       // convert the YAML front matter to a JSON object
@@ -309,16 +320,11 @@ validateConfig(validations)
       if (debugMode) console.dir(fileList);
 
       // build the categories list
-      let categories: string[] = buildCategoryList(fileList, debugMode);
+      let categories: Choice[] = buildCategoryList(fileList, debugMode);
       // do we have any categories?
       if (categories.length > 0) log.info(`Found ${categories.length} categories`);
       categories = categories.sort(compareFunction);
       if (debugMode) console.table(categories);
-
-      let categoryList: any[] = [];
-      categories.map((item: string) => {
-        categoryList.push({ title: item, value: item });
-      });
 
       // Prompt for post title and category
       const questions: any[] = [
@@ -330,7 +336,7 @@ validateConfig(validations)
           type: 'select',
           name: 'postCategory',
           message: 'Select an article category from the list:',
-          choices: categoryList,
+          choices: categories,
           initial: 0
         }];
       console.log();
@@ -340,28 +346,35 @@ validateConfig(validations)
       log.debug(`Title: ${postTitle}`);
       let postCategory: string = response.postCategory;
       log.debug(`Selected category: ${postCategory}`);
-
       // update the front matter with the post title and category
+      templateFrontmatter.title = postTitle;
+      templateFrontmatter.category = postCategory;      
 
-      // create the post file
+      let  newFile = templateFile.slice(); 
+      console.log(newFile);
 
+      // add the front matter to the file 
+      let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
+      // remove the extra carriage return from the end of the frontmatter
+      tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
+      // replace the YAML frontmatter in the file
+      newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
+      // do we need to populate the post with bacon ipsum text?
       if (doPopulate) {
         // get bacon ipsum text
 
         // append it to the end of the template file
-
+        newFile += 'this is some extra text';
       }
 
       // build the target file name
-      let targetFileName = path.join(process.cwd(), configObject.postsFolder);
+      let outputFile = path.join(process.cwd(), configObject.postsFolder);
       if (configObject.useYear) {
-        targetFileName = path.join(targetFileName, new Date().getFullYear().toString());
+        outputFile = path.join(outputFile, new Date().getFullYear().toString());
       }
-      targetFileName = path.join(targetFileName, postTitle.toLowerCase().replace(' ', '-'), templateExtension);
-
-      // write the post file
-      log.info(`Writing changes to ${targetFileName}`);
-      fs.writeFileSync(targetFileName, '');
+      outputFile = path.join(outputFile, postTitle.toLowerCase().replaceAll(' ', '-') + templateExtension);
+      log.info(`Writing changes to ${outputFile}`);      
+      fs.writeFileSync(outputFile, newFile, 'utf8');
     } else {
       log.error(res.message);
       process.exit(1);
