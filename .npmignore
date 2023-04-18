@@ -1,4 +1,5 @@
 # folders
+.vscode/
 ts-src/
 src/
 
