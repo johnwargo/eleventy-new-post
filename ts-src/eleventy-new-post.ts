@@ -117,7 +117,7 @@ async function validateConfig(validations: ConfigValidation[]): Promise<ProcessR
     }
   }
 
-  if (!configObject.paragraphCount || (configObject.paragraphCount < 1 && configObject.paragraphCount > 100)) {
+  if (!configObject.paragraphCount || (configObject.paragraphCount < 1 && configObject.paragraphCount > 101)) {
     processResult.result = false;
     processResult.message += `\nThe 'paragraphCount' value must be greater than 0 and less than 101.`;
   }

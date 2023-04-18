@@ -99,9 +99,9 @@ Now, lets talk about the configuration options (in alphabetical order).
 
 ### `paragraphCount`
 
-The `-p` command-line flag (described below) allows you to generate dummy content for new posts. You would do this if you were simply using the command to populate a site with a set of posts for testing or demonstration purposes. 
+The `-p` command-line flag (described below) allows you to generate dummy content for new posts. As an example, if you were simply using the command to populate a site with a set of posts for testing or demonstration purposes. 
 
-The `paragraphCount` configuration option controls how many paragraphs of content to request from the [Bacon Ipsum JSON API](https://baconipsum.com/json-api/) and add to a new post.
+The `paragraphCount` configuration option controls how many paragraphs of content to request from the [Bacon Ipsum JSON API](https://baconipsum.com/json-api/) and add to a new post. The value here must be between 1 and 100.
 
 ### `postsFolder`
 
@@ -143,7 +143,7 @@ Some Eleventy site projects store posts in a separate folder per year, some don'
 
 The program will prompt you for the name for the article as shown below:
 
-```text
+```shell
 ┌───────────────────┐
 │                   │
 │   11ty New Post   │
@@ -159,7 +159,7 @@ Enter A title for the post and press Enter; the program writes the title to the 
 
 If this is the first post in your site, at this point it will generate the post file and store it in the project using the location settings in the configuration file.
 
-```text
+```shell
 ┌───────────────────┐
 │                   │
 │   11ty New Post   │
@@ -175,7 +175,7 @@ Writing content to D:\dev\node\11ty-new-post\src\posts\2023\sample-post.md
 
 When you generate a new post in a populated site, the program will prompt you to select a Category from the list of categories used in your site as shown below:
 
-```text
+```shell
 ┌───────────────────┐
 │                   │
 │   11ty New Post   │
@@ -194,7 +194,7 @@ by John M. Wargo (https://johnwargo.com)
 
 When you select a Category, the program will write the generated file to the project and close.
 
-```text
+```shell
 ┌───────────────────┐
 │                   │
 │   11ty New Post   │
@@ -217,7 +217,7 @@ If you enable the `-p` (populate) flag as shown below:
 
 The program will do all those things described above, then use the [Bacon Ipsum JSON API](https://baconipsum.com/json-api/) to retrieve content paragraphs for the post and append them to the end of the template file.
 
-```text
+```shell
 ┌───────────────────┐
 │                   │
 │   11ty New Post   │
