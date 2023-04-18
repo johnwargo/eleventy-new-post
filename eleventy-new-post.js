@@ -6,7 +6,7 @@ import prompts from 'prompts';
 import YAML from 'yaml';
 import logger from 'cli-logger';
 var log = logger();
-const APP_NAME = 'Eleventy Category Files Generator';
+const APP_NAME = '11ty New Post';
 const APP_AUTHOR = 'by John M. Wargo (https://johnwargo.com)';
 const APP_CONFIG_FILE = '11ty-np.json';
 const ELEVENTY_FILES = ['.eleventy.js', 'eleventy.config.js'];
@@ -16,7 +16,7 @@ const YAML_PATTERN = /(?<=---[\r\n]).*?(?=[\r\n]---)/s;
 var fileList = [];
 var templateExtension;
 function checkEleventyProject() {
-    log.info('Validating project folder');
+    log.debug('Validating project folder');
     let result = false;
     ELEVENTY_FILES.forEach((file) => {
         let tmpFile = path.join(process.cwd(), file);
@@ -164,7 +164,7 @@ if (!checkEleventyProject()) {
 }
 log.debug('Project is an Eleventy project folder');
 const configFile = path.join(process.cwd(), APP_CONFIG_FILE);
-log.info('Locating configuration file');
+log.debug('Locating configuration file');
 if (!fs.existsSync(configFile)) {
     log.info(`\nConfiguration file '${APP_CONFIG_FILE}' not found`);
     log.info('Rather than using a bunch of command-line arguments, this tool uses a configuration file instead.');
@@ -202,7 +202,7 @@ if (!fs.existsSync(configFile)) {
         process.exit(0);
     }
 }
-log.info('Configuration file located, validating');
+log.debug('Configuration file located, validating');
 const configFilePath = path.join(process.cwd(), APP_CONFIG_FILE);
 if (!fs.existsSync(configFilePath)) {
     log.error(`Unable to locate the configuration file '${APP_CONFIG_FILE}'`);
@@ -218,7 +218,7 @@ validateConfig(validations)
     .then(async (res) => {
     if (res.result) {
         templateExtension = path.extname(configObject.templateFile);
-        log.info(`Reading template file ${configObject.templateFile}`);
+        log.debug(`Reading template file ${configObject.templateFile}`);
         const templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
         let templateDoc = YAML.parseAllDocuments(templateFile, { logLevel: 'silent' });
         let templateFrontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
@@ -238,7 +238,7 @@ validateConfig(validations)
             console.dir(fileList);
         let categories = buildCategoryList(fileList, debugMode);
         if (categories.length > 0)
-            log.info(`Found ${categories.length} categories`);
+            log.debug(`Found ${categories.length} categories`);
         categories = categories.sort(compareFunction);
         if (debugMode)
             console.table(categories);
@@ -257,26 +257,42 @@ validateConfig(validations)
         ];
         console.log();
         let response = await prompts(questions);
+        if (!response.postTitle) {
+            log.info('Exiting...');
+            process.exit(0);
+        }
         let postTitle = response.postTitle;
         log.debug(`Title: ${postTitle}`);
         let postCategory = response.postCategory;
         log.debug(`Selected category: ${postCategory}`);
-        templateFrontmatter.title = postTitle;
-        templateFrontmatter.category = postCategory;
-        let newFile = templateFile.slice();
-        console.log(newFile);
-        let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
-        tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
-        newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
-        if (doPopulate) {
-            newFile += 'this is some extra text';
-        }
         let outputFile = path.join(process.cwd(), configObject.postsFolder);
         if (configObject.useYear) {
             outputFile = path.join(outputFile, new Date().getFullYear().toString());
         }
         outputFile = path.join(outputFile, postTitle.toLowerCase().replaceAll(' ', '-') + templateExtension);
-        log.info(`Writing changes to ${outputFile}`);
+        log.debug(`\nTarget file: ${outputFile}`);
+        if (fs.existsSync(outputFile)) {
+            log.info(`File ${outputFile} already exists, exiting`);
+            process.exit(1);
+        }
+        templateFrontmatter.title = postTitle;
+        templateFrontmatter.category = postCategory;
+        let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
+        tmpFrontmatter = tmpFrontmatter.replace('category: ""', 'category:');
+        tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
+        let newFile = templateFile.slice();
+        newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
+        if (doPopulate) {
+            log.info('\nGetting bacon ipsum text (this may take a few seconds)...');
+            let response = await fetch('https://baconipsum.com/api/?type=all-meat&paras=4&start-with-lorem=1');
+            let fillerText = await response.json();
+            for (const item of fillerText)
+                newFile += item + '\n\n';
+            log.info(`Writing content to ${outputFile}`);
+        }
+        else {
+            log.info(`\nWriting content to ${outputFile}`);
+        }
         fs.writeFileSync(outputFile, newFile, 'utf8');
     }
     else {

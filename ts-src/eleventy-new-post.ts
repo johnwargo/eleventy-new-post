@@ -8,8 +8,6 @@
  * Copied from the 11ty-cat-pages module
  */
 
-// TODO: Remove empty quotes from front matter for empty categories
-
 // node modules
 import fs from 'fs-extra';
 import path from 'path';
@@ -51,7 +49,7 @@ type Choice = {
 // Constants and Variables
 // ====================================
 
-const APP_NAME = 'Eleventy Category Files Generator';
+const APP_NAME = '11ty New Post';
 const APP_AUTHOR = 'by John M. Wargo (https://johnwargo.com)';
 const APP_CONFIG_FILE = '11ty-np.json';
 const ELEVENTY_FILES = ['.eleventy.js', 'eleventy.config.js'];
@@ -67,7 +65,7 @@ var templateExtension: string;
 // ====================================
 
 function checkEleventyProject(): boolean {
-  log.info('Validating project folder');
+  log.debug('Validating project folder');
   let result = false;
   ELEVENTY_FILES.forEach((file) => {
     let tmpFile = path.join(process.cwd(), file);
@@ -241,7 +239,7 @@ log.debug('Project is an Eleventy project folder');
 
 // does the config file exist?
 const configFile = path.join(process.cwd(), APP_CONFIG_FILE);
-log.info('Locating configuration file');
+log.debug('Locating configuration file');
 if (!fs.existsSync(configFile)) {
   log.info(`\nConfiguration file '${APP_CONFIG_FILE}' not found`);
   log.info('Rather than using a bunch of command-line arguments, this tool uses a configuration file instead.');
@@ -282,7 +280,7 @@ if (!fs.existsSync(configFile)) {
 }
 
 // Read the config file
-log.info('Configuration file located, validating');
+log.debug('Configuration file located, validating');
 const configFilePath = path.join(process.cwd(), APP_CONFIG_FILE);
 if (!fs.existsSync(configFilePath)) {
   log.error(`Unable to locate the configuration file '${APP_CONFIG_FILE}'`);
@@ -302,7 +300,7 @@ validateConfig(validations)
       // get the file extension for the template file, we'll use it later
       templateExtension = path.extname(configObject.templateFile);
       // read the template file
-      log.info(`Reading template file ${configObject.templateFile}`);
+      log.debug(`Reading template file ${configObject.templateFile}`);
       const templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
       // get the YAML front matter
       let templateDoc = YAML.parseAllDocuments(templateFile, { logLevel: 'silent' });
@@ -327,7 +325,7 @@ validateConfig(validations)
       // build the categories list
       let categories: Choice[] = buildCategoryList(fileList, debugMode);
       // do we have any categories?
-      if (categories.length > 0) log.info(`Found ${categories.length} categories`);
+      if (categories.length > 0) log.debug(`Found ${categories.length} categories`);
       categories = categories.sort(compareFunction);
       if (debugMode) console.table(categories);
 
@@ -347,30 +345,15 @@ validateConfig(validations)
       console.log();
       let response = await prompts(questions);
 
+      if (!response.postTitle) {
+        log.info('Exiting...');
+        process.exit(0);
+      }
+
       let postTitle: string = response.postTitle;
       log.debug(`Title: ${postTitle}`);
       let postCategory: string = response.postCategory;
       log.debug(`Selected category: ${postCategory}`);
-      // update the front matter with the post title and category
-      templateFrontmatter.title = postTitle;
-      templateFrontmatter.category = postCategory;      
-
-      let  newFile = templateFile.slice(); 
-      console.log(newFile);
-
-      // add the front matter to the file 
-      let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
-      // remove the extra carriage return from the end of the frontmatter
-      tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
-      // replace the YAML frontmatter in the file
-      newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
-      // do we need to populate the post with bacon ipsum text?
-      if (doPopulate) {
-        // get bacon ipsum text
-
-        // append it to the end of the template file
-        newFile += 'this is some extra text';
-      }
 
       // build the target file name
       let outputFile = path.join(process.cwd(), configObject.postsFolder);
@@ -378,7 +361,33 @@ validateConfig(validations)
         outputFile = path.join(outputFile, new Date().getFullYear().toString());
       }
       outputFile = path.join(outputFile, postTitle.toLowerCase().replaceAll(' ', '-') + templateExtension);
-      log.info(`Writing changes to ${outputFile}`);      
+      log.debug(`\nTarget file: ${outputFile}`);
+      if (fs.existsSync(outputFile)) {
+        log.info(`File ${outputFile} already exists, exiting`);
+        process.exit(1);
+      }
+
+      // update the front matter with the post title and category
+      templateFrontmatter.title = postTitle;
+      templateFrontmatter.category = postCategory;
+      // add the front matter to the file 
+      let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
+      tmpFrontmatter = tmpFrontmatter.replace('category: ""', 'category:');
+      // remove the extra carriage return from the end of the frontmatter
+      tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
+      // make a copy of the template file
+      let newFile = templateFile.slice();
+      // replace the YAML frontmatter in the copied file
+      newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
+      if (doPopulate) {
+        log.info('\nGetting bacon ipsum text (this may take a few seconds)...');
+        let response: Response = await fetch('https://baconipsum.com/api/?type=all-meat&paras=4&start-with-lorem=1');
+        let fillerText = await response.json();
+        for (const item of fillerText) newFile += item + '\n\n';
+        log.info(`Writing content to ${outputFile}`);
+      } else {
+        log.info(`\nWriting content to ${outputFile}`);
+      }
       fs.writeFileSync(outputFile, newFile, 'utf8');
     } else {
       log.error(res.message);
