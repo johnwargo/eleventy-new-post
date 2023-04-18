@@ -93,6 +93,8 @@ When it completes, you'll have a new file in the project's root called `11ty-np.
 }
 ```
 
+Edit the configuration settings as needed for your project. 
+
 Now, lets talk about the configuration options (in alphabetical order).
 
 ### `paragraphCount`
