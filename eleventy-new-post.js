@@ -16,6 +16,7 @@ const TEMPLATE_FILE = '11ty-np.md';
 const UNCATEGORIZED_STRING = 'Uncategorized';
 const YAML_PATTERN = /(?<=---[\r\n]).*?(?=[\r\n]---)/s;
 var categories = [];
+var hasBlankCategory = false;
 var fileList = [];
 var templateExtension;
 function zeroPad(tmpVal, numChars = 2) {
@@ -99,8 +100,10 @@ function buildCategoryList(fileList, debugMode) {
             var YAMLDoc = YAML.parseAllDocuments(postFile, { logLevel: 'silent' });
             var content = YAMLDoc[0].toJSON();
             var categoriesString = (content.categories) ? content.categories.toString() : '';
-            if (categoriesString.length < 1)
+            if (categoriesString.length < 1) {
                 categoriesString = UNCATEGORIZED_STRING;
+                hasBlankCategory = true;
+            }
             var catArray = categoriesString.split(',');
             for (var cat of catArray) {
                 var category = cat.trim();
@@ -263,7 +266,7 @@ validateConfig(validations)
             questions.push(categoryPrompt);
         console.log();
         let response = await prompts(questions);
-        if (!response.postTitle || (questions.length > 1 && !response.postCategory)) {
+        if (!response.postTitle || (!hasBlankCategory && questions.length > 1 && !response.postCategory)) {
             log.info('Exiting...');
             process.exit(0);
         }

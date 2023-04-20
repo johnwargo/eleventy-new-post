@@ -63,6 +63,7 @@ const UNCATEGORIZED_STRING = 'Uncategorized';
 const YAML_PATTERN = /(?<=---[\r\n]).*?(?=[\r\n]---)/s
 
 var categories: Choice[] = [];
+var hasBlankCategory: boolean = false;
 var fileList: String[] = [];
 var templateExtension: string;
 
@@ -162,7 +163,10 @@ function buildCategoryList(
       var content = YAMLDoc[0].toJSON();
       // Does the post have a category?
       var categoriesString: string = (content.categories) ? content.categories.toString() : '';
-      if (categoriesString.length < 1) categoriesString = UNCATEGORIZED_STRING;
+      if (categoriesString.length < 1) {
+        categoriesString = UNCATEGORIZED_STRING;
+        hasBlankCategory = true;
+      }
       // split the category list into an array, just in case
       var catArray = categoriesString.split(',');
       // loop through the array
@@ -359,7 +363,7 @@ validateConfig(validations)
       let response = await prompts(questions);
 
       // Did the user cancel?
-      if (!response.postTitle || (questions.length > 1 && !response.postCategory)) {
+      if (!response.postTitle || (!hasBlankCategory && questions.length > 1 && !response.postCategory)) {
         log.info('Exiting...');
         process.exit(0);
       }
@@ -386,7 +390,7 @@ validateConfig(validations)
       }
 
       // update the front matter with the post title and category
-      let tmpDate = new Date();    
+      let tmpDate = new Date();
       templateFrontmatter.date = `${tmpDate.getFullYear()}-${zeroPad(tmpDate.getMonth() + 1)}-${zeroPad(tmpDate.getDate())}`;
       templateFrontmatter.title = postTitle;
       templateFrontmatter.categories = catList;
