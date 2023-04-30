@@ -291,8 +291,11 @@ validateConfig(validations)
         templateFrontmatter.date = `${tmpDate.getFullYear()}-${zeroPad(tmpDate.getMonth() + 1)}-${zeroPad(tmpDate.getDate())}`;
         templateFrontmatter.title = postTitle;
         templateFrontmatter.categories = catList;
+        for (var key in templateFrontmatter) {
+            templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] != "") ? templateFrontmatter[key] : '';
+        }
         let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
-        tmpFrontmatter = tmpFrontmatter.replace('${CATEGORIES_STR}: ""', '${CATEGORIES_STR}:');
+        tmpFrontmatter = tmpFrontmatter.replaceAll(': ""', ': ');
         tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
         let newFile = templateFile.slice();
         newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);

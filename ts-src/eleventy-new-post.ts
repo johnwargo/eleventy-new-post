@@ -395,9 +395,17 @@ validateConfig(validations)
       templateFrontmatter.title = postTitle;
       templateFrontmatter.categories = catList;
 
-      // add the front matter to the file 
+      // ensure all front matter properties are populated at least with an empty string
+      for (var key in templateFrontmatter) {
+        templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] != "") ? templateFrontmatter[key] : '';
+      }
+
+      // Get the front matter in string format
       let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
-      tmpFrontmatter = tmpFrontmatter.replace('${CATEGORIES_STR}: ""', '${CATEGORIES_STR}:');
+      // tmpFrontmatter = tmpFrontmatter.replace('${CATEGORIES_STR}: ""', '${CATEGORIES_STR}:');
+      // Now, since we may have blank properties, we need to remove the empty quotes
+      tmpFrontmatter = tmpFrontmatter.replaceAll(': ""', ': ');
+
       // remove the extra carriage return from the end of the frontmatter
       tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
       // make a copy of the template file
