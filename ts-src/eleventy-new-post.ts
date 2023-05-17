@@ -384,7 +384,7 @@ validateConfig(validations)
       }
 
       var fileName = postTitle.toLowerCase().replaceAll(' ', '-')
-      fileName = fileName.replaceAll(':', '');
+      fileName = fileName.replaceAll(':', '-');
       fileName = fileName.replaceAll('---', '-');
       fileName = fileName.replaceAll('--', '-');
       fileName += templateExtension;
