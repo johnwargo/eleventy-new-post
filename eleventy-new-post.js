@@ -281,7 +281,11 @@ validateConfig(validations)
         if (configObject.useYear) {
             outputFile = path.join(outputFile, new Date().getFullYear().toString());
         }
-        outputFile = path.join(outputFile, postTitle.toLowerCase().replaceAll(' ', '-') + templateExtension);
+        var fileName = postTitle.toLowerCase().replaceAll(' ', '-');
+        fileName = fileName.replaceAll('---', '-');
+        fileName = fileName.replaceAll('--', '-');
+        fileName += templateExtension;
+        outputFile = path.join(outputFile, fileName);
         log.debug(`\nTarget file: ${outputFile}`);
         if (fs.existsSync(outputFile)) {
             log.info(`File ${outputFile} already exists, exiting`);
