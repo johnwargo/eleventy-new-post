@@ -30,8 +30,9 @@ var log = logger();
 type ConfigObject = {
   postsFolder: string;
   templateFile: string;
-  useYear: boolean;
   paragraphCount: number;
+  useYear: boolean;
+
 }
 
 type ConfigValidation = {
@@ -56,7 +57,6 @@ type Choice = {
 const APP_NAME = '11ty New Post';
 const APP_AUTHOR = 'by John M. Wargo (https://johnwargo.com)';
 const APP_CONFIG_FILE = '11ty-np.json';
-const CATEGORIES_STR = 'categories';
 const DEFAULT_PARAGRAPH_COUNT = 4;
 const ELEVENTY_FILES = ['.eleventy.js', 'eleventy.config.js'];
 const TEMPLATE_FILE = '11ty-np.md';
@@ -414,7 +414,6 @@ for (var key in templateFrontmatter) {
 
 // Get the front matter in string format
 let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
-// tmpFrontmatter = tmpFrontmatter.replace('${CATEGORIES_STR}: ""', '${CATEGORIES_STR}:');
 // Now, since we may have blank properties, we need to remove the empty quotes
 tmpFrontmatter = tmpFrontmatter.replaceAll(': ""', ': ');
 
