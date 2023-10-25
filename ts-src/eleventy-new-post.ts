@@ -16,6 +16,7 @@ import path from 'path';
 
 // Third-party modules
 import boxen from 'boxen';
+import { execa } from 'execa';
 import prompts from 'prompts';
 import YAML from 'yaml'
 //@ts-ignore
@@ -308,134 +309,136 @@ const validations: ConfigValidation[] = [
   { filePath: configObject.templateFile, isFolder: false }
 ];
 
-validateConfig(validations)
-  .then(async (res: ProcessResult) => {
-    if (res.result) {
+// Make sure the configuration file is valid
+var res: ProcessResult = await validateConfig(validations);
+if (!res.result) {
+  log.error(res.message);
+  process.exit(1);
+}
 
-      // get the file extension for the template file, we'll use it later
-      templateExtension = path.extname(configObject.templateFile);
-      // read the template file
-      log.debug(`Reading template file ${configObject.templateFile}`);
-      const templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
-      // get the YAML front matter
-      let templateDoc = YAML.parseAllDocuments(templateFile, { logLevel: 'silent' });
-      // convert the YAML front matter to a JSON object
-      let templateFrontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
-      // at this point we have the front matter as a JSON object
-      if (debugMode) console.dir(templateFrontmatter);
-      if (!templateFrontmatter) {
-        log.error('The template file does not contain any YAML front matter, exiting');
-        process.exit(1);
-      }
-      // at this point we have the whole template in templateFile and the front matter in templateFrontmatter    
+// get the file extension for the template file, we'll use it later
+templateExtension = path.extname(configObject.templateFile);
+// read the template file
+log.debug(`Reading template file ${configObject.templateFile}`);
+const templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
+// get the YAML front matter
+let templateDoc = YAML.parseAllDocuments(templateFile, { logLevel: 'silent' });
+// convert the YAML front matter to a JSON object
+let templateFrontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
+// at this point we have the front matter as a JSON object
+if (debugMode) console.dir(templateFrontmatter);
+if (!templateFrontmatter) {
+  log.error('The template file does not contain any YAML front matter, exiting');
+  process.exit(1);
+}
+// at this point we have the whole template in templateFile and the front matter in templateFrontmatter    
 
-      fileList = getFileList(configObject.postsFolder, debugMode);
-      log.debug(`Located ${fileList.length} post files`);
-      if (fileList.length > 0) {
-        if (debugMode) console.dir(fileList);
-        // build the categories list
-        categories = buildCategoryList(fileList, debugMode);
-        // do we have any categories?
-        if (categories.length > 0) log.debug(`Found ${categories.length} categories`);
-        categories = categories.sort(compareFunction);
-        if (debugMode) console.table(categories);
-      }
+fileList = getFileList(configObject.postsFolder, debugMode);
+log.debug(`Located ${fileList.length} post files`);
+if (fileList.length > 0) {
+  if (debugMode) console.dir(fileList);
+  // build the categories list
+  categories = buildCategoryList(fileList, debugMode);
+  // do we have any categories?
+  if (categories.length > 0) log.debug(`Found ${categories.length} categories`);
+  categories = categories.sort(compareFunction);
+  if (debugMode) console.table(categories);
+}
 
-      // The questions array with the title prompt only, 
-      const questions: any[] = [
-        {
-          type: 'text',
-          name: 'postTitle',
-          message: 'Enter a title for the post:'
-        }];
-      // define this one separately just in case we need it
-      const categoryPrompt: any = {
-        type: 'select',
-        name: 'postCategory',
-        message: 'Select an article category from the list:',
-        choices: categories,
-        initial: 0
-      }
-      // If we have categories to pick from, add the category prompt to the questions array
-      if (categories.length > 0) questions.push(categoryPrompt);
+// The questions array with the title prompt only, 
+const questions: any[] = [
+  {
+    type: 'text',
+    name: 'postTitle',
+    message: 'Enter a title for the post:'
+  }];
+// define this one separately just in case we need it
+const categoryPrompt: any = {
+  type: 'select',
+  name: 'postCategory',
+  message: 'Select an article category from the list:',
+  choices: categories,
+  initial: 0
+}
+// If we have categories to pick from, add the category prompt to the questions array
+if (categories.length > 0) questions.push(categoryPrompt);
 
-      console.log();  // throw in a blank line on the console
-      let response = await prompts(questions);
+console.log();  // throw in a blank line on the console
+let response = await prompts(questions);
 
-      // Did the user cancel?
-      if (!response.postTitle || (!hasBlankCategory && questions.length > 1 && !response.postCategory)) {
-        log.info('Exiting...');
-        process.exit(0);
-      }
+// Did the user cancel?
+if (!response.postTitle || (!hasBlankCategory && questions.length > 1 && !response.postCategory)) {
+  log.info('Exiting...');
+  process.exit(0);
+}
 
-      let postTitle: string = response.postTitle;
-      log.debug(`Title: ${postTitle}`);
-      // Sets category to uncategorized if there are no categories to pick from
-      let postCategory: string = response.postCategory ? response.postCategory : '';
-      log.debug(`Selected category: ${postCategory}`);
+let postTitle: string = response.postTitle;
+log.debug(`Title: ${postTitle}`);
+// Sets category to uncategorized if there are no categories to pick from
+let postCategory: string = response.postCategory ? response.postCategory : '';
+log.debug(`Selected category: ${postCategory}`);
 
-      let catList: string[] = [];
-      if (postCategory.length > 0) catList.push(postCategory);
+let catList: string[] = [];
+if (postCategory.length > 0) catList.push(postCategory);
 
-      // build the target file name
-      let outputFile = path.join(process.cwd(), configObject.postsFolder);
-      if (configObject.useYear) {
-        outputFile = path.join(outputFile, new Date().getFullYear().toString());
-      }
+// build the target file name
+let outputFile = path.join(process.cwd(), configObject.postsFolder);
+if (configObject.useYear) {
+  outputFile = path.join(outputFile, new Date().getFullYear().toString());
+}
 
-      var fileName = postTitle.toLowerCase().replaceAll(' ', '-')
-      fileName = fileName.replaceAll('?', '');
-      fileName = fileName.replaceAll(':', '-');
-      fileName = fileName.replaceAll('---', '-');
-      fileName = fileName.replaceAll('--', '-');
-      fileName += templateExtension;
+var fileName = postTitle.toLowerCase().replaceAll(' ', '-')
+fileName = fileName.replaceAll('?', '');
+fileName = fileName.replaceAll(':', '-');
+fileName = fileName.replaceAll('---', '-');
+fileName = fileName.replaceAll('--', '-');
+fileName += templateExtension;
 
-      outputFile = path.join(outputFile, fileName);
-      log.debug(`\nTarget file: ${outputFile}`);
-      if (fs.existsSync(outputFile)) {
-        log.info(`File ${outputFile} already exists, exiting`);
-        process.exit(1);
-      }
+outputFile = path.join(outputFile, fileName);
+log.debug(`\nTarget file: ${outputFile}`);
+if (fs.existsSync(outputFile)) {
+  log.info(`File ${outputFile} already exists, exiting`);
+  process.exit(1);
+}
 
-      // update the front matter with the post title and category
-      let tmpDate = new Date();
-      templateFrontmatter.date = `${tmpDate.getFullYear()}-${zeroPad(tmpDate.getMonth() + 1)}-${zeroPad(tmpDate.getDate())}`;
-      templateFrontmatter.title = postTitle;
-      templateFrontmatter.categories = catList;
+// update the front matter with the post title and category
+let tmpDate = new Date();
+templateFrontmatter.date = `${tmpDate.getFullYear()}-${zeroPad(tmpDate.getMonth() + 1)}-${zeroPad(tmpDate.getDate())}`;
+templateFrontmatter.title = postTitle;
+templateFrontmatter.categories = catList;
 
-      // ensure all front matter properties are populated at least with an empty string
-      for (var key in templateFrontmatter) {
-        templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] != "") ? templateFrontmatter[key] : '';
-      }
+// ensure all front matter properties are populated at least with an empty string
+for (var key in templateFrontmatter) {
+  templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] != "") ? templateFrontmatter[key] : '';
+}
 
-      // Get the front matter in string format
-      let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
-      // tmpFrontmatter = tmpFrontmatter.replace('${CATEGORIES_STR}: ""', '${CATEGORIES_STR}:');
-      // Now, since we may have blank properties, we need to remove the empty quotes
-      tmpFrontmatter = tmpFrontmatter.replaceAll(': ""', ': ');
+// Get the front matter in string format
+let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
+// tmpFrontmatter = tmpFrontmatter.replace('${CATEGORIES_STR}: ""', '${CATEGORIES_STR}:');
+// Now, since we may have blank properties, we need to remove the empty quotes
+tmpFrontmatter = tmpFrontmatter.replaceAll(': ""', ': ');
 
-      // remove the extra carriage return from the end of the frontmatter
-      tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
-      // make a copy of the template file
-      let newFile = templateFile.slice();
-      // replace the YAML frontmatter in the copied file
-      newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
-      if (doPopulate) {
-        log.info('\nGetting bacon ipsum text (this may take a few seconds)...');
-        let response: Response = await fetch(`https://baconipsum.com/api/?type=all-meat&paras=${configObject.paragraphCount}&start-with-lorem=1`);
-        let fillerText = await response.json();
-        for (const item of fillerText) newFile += item + '\n\n';
-        log.info(`Writing content to ${outputFile}`);
-      } else {
-        log.info(`\nWriting content to ${outputFile}`);
-      }
-      fs.writeFileSync(outputFile, newFile, 'utf8');
-    } else {
-      log.error(res.message);
-      process.exit(1);
-    }
-  })
-  .catch((err) => {
-    log.error(err);
-    process.exit(1);
-  });
+// remove the extra carriage return from the end of the frontmatter
+tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
+// make a copy of the template file
+let newFile = templateFile.slice();
+// replace the YAML frontmatter in the copied file
+newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
+if (doPopulate) {
+  log.info('\nGetting bacon ipsum text (this may take a few seconds)...');
+  let response: Response = await fetch(`https://baconipsum.com/api/?type=all-meat&paras=${configObject.paragraphCount}&start-with-lorem=1`);
+  let fillerText = await response.json();
+  for (const item of fillerText) newFile += item + '\n\n';
+  log.info(`Writing content to ${outputFile}`);
+} else {
+  log.info(`\nWriting content to ${outputFile}`);
+}
+
+try {
+  await fs.writeFileSync(outputFile, newFile, 'utf8');
+  await execa('code', [`./${path.basename(outputFile)}`]);
+} catch (err) {
+  log.error(err);
+  process.exit(1);
+}
+
