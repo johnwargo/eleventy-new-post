@@ -88,14 +88,24 @@ When it completes, you'll have a new file in the project's root called `11ty-np.
 {
   "postsFolder": "src/posts",
   "templateFile": "11ty-np.md",
+  "paragraphCount": 4,
   "useYear": true,
-  "paragraphCount": 4
+  "openAfterCreate": false,
+  "editorCmd": "code"
 }
 ```
 
 Edit the configuration settings as needed for your project. 
 
 Now, lets talk about the configuration options (in alphabetical order).
+
+### `editorCmd`
+
+With `openAfterCreate` set to `true, the module opens the newly created post file using the editor executable provided here. The value defaults to `code` (Visual Studio Code).
+
+### `openAfterCreate`
+
+When `true`, the module automatically opens the newly created post for editing using the editor command specified in `editorCmd`.
 
 ### `paragraphCount`
 

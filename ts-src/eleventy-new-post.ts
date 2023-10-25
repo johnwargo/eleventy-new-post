@@ -32,7 +32,9 @@ type ConfigObject = {
   templateFile: string;
   paragraphCount: number;
   useYear: boolean;
-
+  // Added in 0.0.6
+  openAfterCreate: boolean;
+  editorCmd: string;
 }
 
 type ConfigValidation = {
@@ -122,6 +124,11 @@ async function validateConfig(validations: ConfigValidation[]): Promise<ProcessR
   if (!configObject.paragraphCount || (configObject.paragraphCount < 1 && configObject.paragraphCount > 101)) {
     processResult.result = false;
     processResult.message += `\nThe 'paragraphCount' value must be greater than 0 and less than 101.`;
+  }
+
+  if (configObject.openAfterCreate && configObject.editorCmd.length < 1) {
+    processResult.result = false;
+    processResult.message += '\neditorCmd must contain a value when openAfterCreate is true.'
   }
 
   return processResult;
@@ -223,8 +230,10 @@ function buildConfigObject(): ConfigObject {
   return {
     postsFolder: findFilePath('posts', theFolders),
     templateFile: TEMPLATE_FILE,
+    paragraphCount: DEFAULT_PARAGRAPH_COUNT,
     useYear: false,
-    paragraphCount: DEFAULT_PARAGRAPH_COUNT
+    openAfterCreate: false,
+    editorCmd: 'code'
   }
 }
 
@@ -274,7 +283,7 @@ if (!fs.existsSync(configFile)) {
     if (debugMode) console.dir(configObject);
     let outputStr = JSON.stringify(configObject, null, 2);
     // replace the backslashes with forward slashes
-    // do this so on windows it would have double backslashes
+    // do this so on windows it won't have double backslashes
     outputStr = outputStr.replace(/\\/g, '/');
     outputStr = outputStr.replaceAll('//', '/');
     log.info(`Writing configuration file ${APP_CONFIG_FILE}`);
@@ -294,21 +303,20 @@ if (!fs.existsSync(configFile)) {
   }
 }
 
-// Read the config file
+// do we have a configuration file? We should, we checked earlier
 log.debug('Configuration file located, validating');
 const configFilePath = path.join(process.cwd(), APP_CONFIG_FILE);
 if (!fs.existsSync(configFilePath)) {
   log.error(`Unable to locate the configuration file '${APP_CONFIG_FILE}'`);
   process.exit(1);
 }
-
+// Read the config file
 let configData = fs.readFileSync(configFilePath, 'utf8');
 const configObject: ConfigObject = JSON.parse(configData);
 const validations: ConfigValidation[] = [
   { filePath: configObject.postsFolder, isFolder: true },
   { filePath: configObject.templateFile, isFolder: false }
 ];
-
 // Make sure the configuration file is valid
 var res: ProcessResult = await validateConfig(validations);
 if (!res.result) {
@@ -331,7 +339,10 @@ if (!templateFrontmatter) {
   log.error('The template file does not contain any YAML front matter, exiting');
   process.exit(1);
 }
-// at this point we have the whole template in templateFile and the front matter in templateFrontmatter    
+// ========================================================================
+// at this point we have the whole template in the `templateFile` variable
+// and the front matter in `templateFrontmatter`
+// ========================================================================
 
 fileList = getFileList(configObject.postsFolder, debugMode);
 log.debug(`Located ${fileList.length} post files`);
@@ -392,6 +403,7 @@ fileName = fileName.replaceAll('?', '');
 fileName = fileName.replaceAll(':', '-');
 fileName = fileName.replaceAll('---', '-');
 fileName = fileName.replaceAll('--', '-');
+// add the file extension to the newly formed file name
 fileName += templateExtension;
 
 outputFile = path.join(outputFile, fileName);
@@ -416,31 +428,33 @@ for (var key in templateFrontmatter) {
 let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
 // Now, since we may have blank properties, we need to remove the empty quotes
 tmpFrontmatter = tmpFrontmatter.replaceAll(': ""', ': ');
-
 // remove the extra carriage return from the end of the frontmatter
 tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
 // make a copy of the template file
 let newFile = templateFile.slice();
 // replace the YAML frontmatter in the copied file
 newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
-if (doPopulate) {
+if (!doPopulate) {
+  console.log();
+} else {
   log.info('\nGetting bacon ipsum text (this may take a few seconds)...');
   let fetchURL = `https://baconipsum.com/api/?type=all-meat&paras=${configObject.paragraphCount}&start-with-lorem=1`;
   log.debug(`fetchURL: ${fetchURL}`);
   let response: Response = await fetch(fetchURL);
   let fillerText = await response.json();
   for (const item of fillerText) newFile += item + '\n\n';
-  log.info(`Writing content to ${outputFile}`);
-} else {
-  log.info(`\nWriting content to ${outputFile}`);
 }
-
-try {
-  fs.writeFileSync(outputFile, newFile, 'utf8');
-  let spawnParam = `./${path.relative(process.cwd(), outputFile)}`;
-  log.info(`Opening ${spawnParam} in VS Code`);
-  await execa('code', [spawnParam]);
-} catch (err) {
-  log.error(err);
-  process.exit(1);
+// write the new file
+log.info(`Writing content to ${outputFile}`);
+fs.writeFileSync(outputFile, newFile, 'utf8');
+// then launch it in an editor if configured to do so
+if (configObject.openAfterCreate) {
+  var localFile = '.' + path.sep + path.relative(process.cwd(), outputFile);
+  log.info(`Opening ${localFile} in ${configObject.editorCmd}`);
+  try {
+    await execa(configObject.editorCmd, [localFile]);
+  } catch (err) {
+    log.error(err);
+    process.exit(1);
+  }
 }

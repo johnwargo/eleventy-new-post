@@ -10,7 +10,6 @@ var log = logger();
 const APP_NAME = '11ty New Post';
 const APP_AUTHOR = 'by John M. Wargo (https://johnwargo.com)';
 const APP_CONFIG_FILE = '11ty-np.json';
-const CATEGORIES_STR = 'categories';
 const DEFAULT_PARAGRAPH_COUNT = 4;
 const ELEVENTY_FILES = ['.eleventy.js', 'eleventy.config.js'];
 const TEMPLATE_FILE = '11ty-np.md';
@@ -66,6 +65,10 @@ async function validateConfig(validations) {
     if (!configObject.paragraphCount || (configObject.paragraphCount < 1 && configObject.paragraphCount > 101)) {
         processResult.result = false;
         processResult.message += `\nThe 'paragraphCount' value must be greater than 0 and less than 101.`;
+    }
+    if (configObject.openAfterCreate && configObject.editorCmd.length < 1) {
+        processResult.result = false;
+        processResult.message += '\neditorCmd must contain a value when openAfterCreate is true.';
     }
     return processResult;
 }
@@ -155,8 +158,10 @@ function buildConfigObject() {
     return {
         postsFolder: findFilePath('posts', theFolders),
         templateFile: TEMPLATE_FILE,
+        paragraphCount: DEFAULT_PARAGRAPH_COUNT,
         useYear: false,
-        paragraphCount: DEFAULT_PARAGRAPH_COUNT
+        openAfterCreate: false,
+        editorCmd: 'code'
     };
 }
 console.log(boxen(APP_NAME, { padding: 1 }));
@@ -308,7 +313,10 @@ tmpFrontmatter = tmpFrontmatter.replaceAll(': ""', ': ');
 tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
 let newFile = templateFile.slice();
 newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
-if (doPopulate) {
+if (!doPopulate) {
+    console.log();
+}
+else {
     log.info('\nGetting bacon ipsum text (this may take a few seconds)...');
     let fetchURL = `https://baconipsum.com/api/?type=all-meat&paras=${configObject.paragraphCount}&start-with-lorem=1`;
     log.debug(`fetchURL: ${fetchURL}`);
@@ -316,18 +324,17 @@ if (doPopulate) {
     let fillerText = await response.json();
     for (const item of fillerText)
         newFile += item + '\n\n';
-    log.info(`Writing content to ${outputFile}`);
 }
-else {
-    log.info(`\nWriting content to ${outputFile}`);
-}
-try {
-    fs.writeFileSync(outputFile, newFile, 'utf8');
-    let spawnParam = `./${path.relative(process.cwd(), outputFile)}`;
-    log.info(`Opening ${spawnParam} in VS Code`);
-    await execa('code', [spawnParam]);
-}
-catch (err) {
-    log.error(err);
-    process.exit(1);
+log.info(`Writing content to ${outputFile}`);
+fs.writeFileSync(outputFile, newFile, 'utf8');
+if (configObject.openAfterCreate) {
+    var localFile = '.' + path.sep + path.relative(process.cwd(), outputFile);
+    log.info(`Opening ${localFile} in ${configObject.editorCmd}`);
+    try {
+        await execa(configObject.editorCmd, [localFile]);
+    }
+    catch (err) {
+        log.error(err);
+        process.exit(1);
+    }
 }
