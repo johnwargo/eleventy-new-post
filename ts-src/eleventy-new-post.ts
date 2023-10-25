@@ -426,7 +426,9 @@ let newFile = templateFile.slice();
 newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
 if (doPopulate) {
   log.info('\nGetting bacon ipsum text (this may take a few seconds)...');
-  let response: Response = await fetch(`https://baconipsum.com/api/?type=all-meat&paras=${configObject.paragraphCount}&start-with-lorem=1`);
+  let fetchURL = `https://baconipsum.com/api/?type=all-meat&paras=${configObject.paragraphCount}&start-with-lorem=1`;
+  log.debug(`fetchURL: ${fetchURL}`);
+  let response: Response = await fetch(fetchURL);
   let fillerText = await response.json();
   for (const item of fillerText) newFile += item + '\n\n';
   log.info(`Writing content to ${outputFile}`);
@@ -435,10 +437,11 @@ if (doPopulate) {
 }
 
 try {
-  await fs.writeFileSync(outputFile, newFile, 'utf8');
-  await execa('code', [`./${path.basename(outputFile)}`]);
+  fs.writeFileSync(outputFile, newFile, 'utf8');
+  let spawnParam = `./${path.relative(process.cwd(), outputFile)}`;
+  log.info(`Opening ${spawnParam} in VS Code`);
+  await execa('code', [spawnParam]);
 } catch (err) {
   log.error(err);
   process.exit(1);
 }
-

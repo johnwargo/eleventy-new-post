@@ -224,108 +224,110 @@ const validations = [
     { filePath: configObject.templateFile, isFolder: false }
 ];
 var res = await validateConfig(validations);
-if (res.result) {
-    templateExtension = path.extname(configObject.templateFile);
-    log.debug(`Reading template file ${configObject.templateFile}`);
-    const templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
-    let templateDoc = YAML.parseAllDocuments(templateFile, { logLevel: 'silent' });
-    let templateFrontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
+if (!res.result) {
+    log.error(res.message);
+    process.exit(1);
+}
+templateExtension = path.extname(configObject.templateFile);
+log.debug(`Reading template file ${configObject.templateFile}`);
+const templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
+let templateDoc = YAML.parseAllDocuments(templateFile, { logLevel: 'silent' });
+let templateFrontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
+if (debugMode)
+    console.dir(templateFrontmatter);
+if (!templateFrontmatter) {
+    log.error('The template file does not contain any YAML front matter, exiting');
+    process.exit(1);
+}
+fileList = getFileList(configObject.postsFolder, debugMode);
+log.debug(`Located ${fileList.length} post files`);
+if (fileList.length > 0) {
     if (debugMode)
-        console.dir(templateFrontmatter);
-    if (!templateFrontmatter) {
-        log.error('The template file does not contain any YAML front matter, exiting');
-        process.exit(1);
-    }
-    fileList = getFileList(configObject.postsFolder, debugMode);
-    log.debug(`Located ${fileList.length} post files`);
-    if (fileList.length > 0) {
-        if (debugMode)
-            console.dir(fileList);
-        categories = buildCategoryList(fileList, debugMode);
-        if (categories.length > 0)
-            log.debug(`Found ${categories.length} categories`);
-        categories = categories.sort(compareFunction);
-        if (debugMode)
-            console.table(categories);
-    }
-    const questions = [
-        {
-            type: 'text',
-            name: 'postTitle',
-            message: 'Enter a title for the post:'
-        }
-    ];
-    const categoryPrompt = {
-        type: 'select',
-        name: 'postCategory',
-        message: 'Select an article category from the list:',
-        choices: categories,
-        initial: 0
-    };
+        console.dir(fileList);
+    categories = buildCategoryList(fileList, debugMode);
     if (categories.length > 0)
-        questions.push(categoryPrompt);
-    console.log();
-    let response = await prompts(questions);
-    if (!response.postTitle || (!hasBlankCategory && questions.length > 1 && !response.postCategory)) {
-        log.info('Exiting...');
-        process.exit(0);
+        log.debug(`Found ${categories.length} categories`);
+    categories = categories.sort(compareFunction);
+    if (debugMode)
+        console.table(categories);
+}
+const questions = [
+    {
+        type: 'text',
+        name: 'postTitle',
+        message: 'Enter a title for the post:'
     }
-    let postTitle = response.postTitle;
-    log.debug(`Title: ${postTitle}`);
-    let postCategory = response.postCategory ? response.postCategory : '';
-    log.debug(`Selected category: ${postCategory}`);
-    let catList = [];
-    if (postCategory.length > 0)
-        catList.push(postCategory);
-    let outputFile = path.join(process.cwd(), configObject.postsFolder);
-    if (configObject.useYear) {
-        outputFile = path.join(outputFile, new Date().getFullYear().toString());
-    }
-    var fileName = postTitle.toLowerCase().replaceAll(' ', '-');
-    fileName = fileName.replaceAll('?', '');
-    fileName = fileName.replaceAll(':', '-');
-    fileName = fileName.replaceAll('---', '-');
-    fileName = fileName.replaceAll('--', '-');
-    fileName += templateExtension;
-    outputFile = path.join(outputFile, fileName);
-    log.debug(`\nTarget file: ${outputFile}`);
-    if (fs.existsSync(outputFile)) {
-        log.info(`File ${outputFile} already exists, exiting`);
-        process.exit(1);
-    }
-    let tmpDate = new Date();
-    templateFrontmatter.date = `${tmpDate.getFullYear()}-${zeroPad(tmpDate.getMonth() + 1)}-${zeroPad(tmpDate.getDate())}`;
-    templateFrontmatter.title = postTitle;
-    templateFrontmatter.categories = catList;
-    for (var key in templateFrontmatter) {
-        templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] != "") ? templateFrontmatter[key] : '';
-    }
-    let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
-    tmpFrontmatter = tmpFrontmatter.replaceAll(': ""', ': ');
-    tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
-    let newFile = templateFile.slice();
-    newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
-    if (doPopulate) {
-        log.info('\nGetting bacon ipsum text (this may take a few seconds)...');
-        let response = await fetch(`https://baconipsum.com/api/?type=all-meat&paras=${configObject.paragraphCount}&start-with-lorem=1`);
-        let fillerText = await response.json();
-        for (const item of fillerText)
-            newFile += item + '\n\n';
-        log.info(`Writing content to ${outputFile}`);
-    }
-    else {
-        log.info(`\nWriting content to ${outputFile}`);
-    }
-    try {
-        await fs.writeFileSync(outputFile, newFile, 'utf8');
-        await execa('code', [`./${path.basename(outputFile)}`]);
-    }
-    catch (err) {
-        log.error(err);
-        process.exit(1);
-    }
+];
+const categoryPrompt = {
+    type: 'select',
+    name: 'postCategory',
+    message: 'Select an article category from the list:',
+    choices: categories,
+    initial: 0
+};
+if (categories.length > 0)
+    questions.push(categoryPrompt);
+console.log();
+let response = await prompts(questions);
+if (!response.postTitle || (!hasBlankCategory && questions.length > 1 && !response.postCategory)) {
+    log.info('Exiting...');
+    process.exit(0);
+}
+let postTitle = response.postTitle;
+log.debug(`Title: ${postTitle}`);
+let postCategory = response.postCategory ? response.postCategory : '';
+log.debug(`Selected category: ${postCategory}`);
+let catList = [];
+if (postCategory.length > 0)
+    catList.push(postCategory);
+let outputFile = path.join(process.cwd(), configObject.postsFolder);
+if (configObject.useYear) {
+    outputFile = path.join(outputFile, new Date().getFullYear().toString());
+}
+var fileName = postTitle.toLowerCase().replaceAll(' ', '-');
+fileName = fileName.replaceAll('?', '');
+fileName = fileName.replaceAll(':', '-');
+fileName = fileName.replaceAll('---', '-');
+fileName = fileName.replaceAll('--', '-');
+fileName += templateExtension;
+outputFile = path.join(outputFile, fileName);
+log.debug(`\nTarget file: ${outputFile}`);
+if (fs.existsSync(outputFile)) {
+    log.info(`File ${outputFile} already exists, exiting`);
+    process.exit(1);
+}
+let tmpDate = new Date();
+templateFrontmatter.date = `${tmpDate.getFullYear()}-${zeroPad(tmpDate.getMonth() + 1)}-${zeroPad(tmpDate.getDate())}`;
+templateFrontmatter.title = postTitle;
+templateFrontmatter.categories = catList;
+for (var key in templateFrontmatter) {
+    templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] != "") ? templateFrontmatter[key] : '';
+}
+let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
+tmpFrontmatter = tmpFrontmatter.replaceAll(': ""', ': ');
+tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
+let newFile = templateFile.slice();
+newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
+if (doPopulate) {
+    log.info('\nGetting bacon ipsum text (this may take a few seconds)...');
+    let fetchURL = `https://baconipsum.com/api/?type=all-meat&paras=${configObject.paragraphCount}&start-with-lorem=1`;
+    log.debug(`fetchURL: ${fetchURL}`);
+    let response = await fetch(fetchURL);
+    let fillerText = await response.json();
+    for (const item of fillerText)
+        newFile += item + '\n\n';
+    log.info(`Writing content to ${outputFile}`);
 }
 else {
-    log.error(res.message);
+    log.info(`\nWriting content to ${outputFile}`);
+}
+try {
+    fs.writeFileSync(outputFile, newFile, 'utf8');
+    let spawnParam = `./${path.relative(process.cwd(), outputFile)}`;
+    log.info(`Opening ${spawnParam} in VS Code`);
+    await execa('code', [spawnParam]);
+}
+catch (err) {
+    log.error(err);
     process.exit(1);
 }
