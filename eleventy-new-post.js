@@ -264,9 +264,9 @@ const questions = [
     }
 ];
 const categoryPrompt = {
-    type: 'select',
-    name: 'postCategory',
-    message: 'Select an article category from the list:',
+    type: 'multiselect',
+    name: 'postCategories',
+    message: 'Select one or more categories from the list:',
     choices: categories,
     initial: 0
 };
@@ -280,11 +280,14 @@ if (!response.postTitle || (!hasBlankCategory && questions.length > 1 && !respon
 }
 let postTitle = response.postTitle;
 log.debug(`Title: ${postTitle}`);
-let postCategory = response.postCategory ? response.postCategory : '';
-log.debug(`Selected category: ${postCategory}`);
 let catList = [];
-if (postCategory.length > 0)
-    catList.push(postCategory);
+if (response.postCategories.length > 0) {
+    log.info('Category(ies) selected');
+    if (debugMode)
+        console.dir(response.postCategories);
+    catList = catList.concat(response.postCategories);
+}
+console.dir(catList);
 let outputFile = path.join(process.cwd(), configObject.postsFolder);
 if (configObject.useYear) {
     outputFile = path.join(outputFile, new Date().getFullYear().toString());

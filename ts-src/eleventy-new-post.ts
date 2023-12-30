@@ -365,9 +365,9 @@ const questions: any[] = [
   }];
 // define this one separately just in case we need it
 const categoryPrompt: any = {
-  type: 'select',
-  name: 'postCategory',
-  message: 'Select an article category from the list:',
+  type: 'multiselect',
+  name: 'postCategories',
+  message: 'Select one or more categories from the list:',
   choices: categories,
   initial: 0
 }
@@ -385,12 +385,16 @@ if (!response.postTitle || (!hasBlankCategory && questions.length > 1 && !respon
 
 let postTitle: string = response.postTitle;
 log.debug(`Title: ${postTitle}`);
-// Sets category to uncategorized if there are no categories to pick from
-let postCategory: string = response.postCategory ? response.postCategory : '';
-log.debug(`Selected category: ${postCategory}`);
 
+// start with an empty array, assumes no selected category
 let catList: string[] = [];
-if (postCategory.length > 0) catList.push(postCategory);
+// do we have any categories?
+if (response.postCategories.length > 0) {
+  log.debug('One or more categories selected');
+  // append the selected categories to the catList array
+  catList = catList.concat(response.postCategories);
+}
+if (debugMode) console.dir(catList);
 
 // build the target file name
 let outputFile = path.join(process.cwd(), configObject.postsFolder);

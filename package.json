@@ -34,6 +34,7 @@
   "devDependencies": {
     "@types/fs-extra": "^11.0.1",
     "@types/node": "^18.15.5",
-    "@types/prompts": "^2.4.4"
+    "@types/prompts": "^2.4.4",
+    "typescript": "^5.3.3"
   }
 }
