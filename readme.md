@@ -153,7 +153,7 @@ Some Eleventy site projects store posts in a separate folder per year, some don'
 
 The program will prompt you for the name for the article as shown below:
 
-```shell
+```text
 ┌───────────────────┐
 │                   │
 │   11ty New Post   │
@@ -169,7 +169,7 @@ Enter A title for the post and press Enter; the program writes the title to the 
 
 If this is the first post in your site, at this point it will generate the post file and store it in the project using the location settings in the configuration file.
 
-```shell
+```text
 ┌───────────────────┐
 │                   │
 │   11ty New Post   │
@@ -185,7 +185,7 @@ Writing content to D:\dev\node\11ty-new-post\src\posts\2023\sample-post.md
 
 When you generate a new post in a populated site, the program will prompt you to select a Category from the list of categories used in your site as shown below:
 
-```shell
+```text
 ┌───────────────────┐
 │                   │
 │   11ty New Post   │
@@ -195,16 +195,21 @@ When you generate a new post in a populated site, the program will prompt you to
 by John M. Wargo (https://johnwargo.com)
 
 √ Enter a title for the post: ... Sample Post
-? Select an article category from the list: » - Use arrow-keys. Return to submit.
-    Cats
->   Dogs
-    Turtles
-    Uncategorized
+? Select one or more categories from the list: »                                                                                                 
+Instructions:
+    ↑/↓: Highlight option
+    ←/→/[space]: Toggle selection
+    a: Toggle all
+    enter/return: Complete answer
+( )   Cats
+( )   Dogs
+( )   Turtles
+( )   Uncategorized   
 ```
 
-When you select a Category, the program will write the generated file to the project and close.
+Use the arrow keys as directed in the prompt to select one or more categories from the list, then press Enter to continue. Press Enter without making a selection to assign no categories to the post. At this point, the program will write the generated post file to the project and close.
 
-```shell
+```text
 ┌───────────────────┐
 │                   │
 │   11ty New Post   │
@@ -214,7 +219,7 @@ When you select a Category, the program will write the generated file to the pro
 by John M. Wargo (https://johnwargo.com)
 
 √ Enter a title for the post: ... Sample Post
-√ Select an article category from the list: » Dogs
+√ Select one or more categories from the list: » Cats, Dogs
 
 Writing content to D:\dev\node\11ty-new-post\src\posts\2023\sample-post.md
 ```
@@ -227,7 +232,7 @@ If you enable the `-p` (populate) flag as shown below:
 
 The program will do all those things described above, then use the [Bacon Ipsum JSON API](https://baconipsum.com/json-api/) to retrieve content paragraphs for the post and append them to the end of the template file.
 
-```shell
+```text
 ┌───────────────────┐
 │                   │
 │   11ty New Post   │
@@ -237,7 +242,7 @@ The program will do all those things described above, then use the [Bacon Ipsum 
 by John M. Wargo (https://johnwargo.com)
 
 √ Enter a title for the post: ... Populated Post
-√ Select an article category from the list: » Dogs
+√ Select one or more categories from the list: » Dogs
 
 Getting bacon ipsum text (this may take a few seconds)...
 Writing content to D:\dev\node\11ty-new-post\src\posts\2023\populated-post.md

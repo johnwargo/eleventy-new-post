@@ -1,5 +1,9 @@
 # Changelog
 
+## 20231230
+
+Added support for selecting multiple categories.
+
 ## 20231025
 
 Added a configuration option to automatically open the newly created post file after creation, using a specified editor command. Also refactored the code a little to make it cleaner.

@@ -402,7 +402,7 @@ if (configObject.useYear) {
   outputFile = path.join(outputFile, new Date().getFullYear().toString());
 }
 
-var fileName = postTitle.toLowerCase().replaceAll(' ', '-')
+var fileName = postTitle.toLowerCase().replaceAll(' ', '-');
 fileName = fileName.replaceAll('?', '');
 fileName = fileName.replaceAll(':', '-');
 fileName = fileName.replaceAll('---', '-');

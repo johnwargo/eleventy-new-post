@@ -282,12 +282,11 @@ let postTitle = response.postTitle;
 log.debug(`Title: ${postTitle}`);
 let catList = [];
 if (response.postCategories.length > 0) {
-    log.info('Category(ies) selected');
-    if (debugMode)
-        console.dir(response.postCategories);
+    log.debug('One or more categories selected');
     catList = catList.concat(response.postCategories);
 }
-console.dir(catList);
+if (debugMode)
+    console.dir(catList);
 let outputFile = path.join(process.cwd(), configObject.postsFolder);
 if (configObject.useYear) {
     outputFile = path.join(outputFile, new Date().getFullYear().toString());
