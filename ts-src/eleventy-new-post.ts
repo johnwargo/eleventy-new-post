@@ -378,13 +378,14 @@ console.log();  // throw in a blank line on the console
 let response = await prompts(questions);
 
 // Did the user cancel?
-if (!response.postTitle || (!hasBlankCategory && questions.length > 1 && !response.postCategory)) {
+// if (!response.postTitle || (!hasBlankCategory && questions.length > 1 && !response.postCategory)) {
+if (response.postTitle.length < 1) {
   log.info('Exiting...');
   process.exit(0);
 }
 
 let postTitle: string = response.postTitle;
-log.debug(`Title: ${postTitle}`);
+log.debug(`\nTitle: ${postTitle}`);
 
 // start with an empty array, assumes no selected category
 let catList: string[] = [];

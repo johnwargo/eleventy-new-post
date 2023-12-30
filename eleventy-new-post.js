@@ -274,12 +274,12 @@ if (categories.length > 0)
     questions.push(categoryPrompt);
 console.log();
 let response = await prompts(questions);
-if (!response.postTitle || (!hasBlankCategory && questions.length > 1 && !response.postCategory)) {
+if (response.postTitle.length < 1) {
     log.info('Exiting...');
     process.exit(0);
 }
 let postTitle = response.postTitle;
-log.debug(`Title: ${postTitle}`);
+log.debug(`\nTitle: ${postTitle}`);
 let catList = [];
 if (response.postCategories.length > 0) {
     log.debug('One or more categories selected');
