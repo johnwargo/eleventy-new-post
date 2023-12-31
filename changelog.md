@@ -1,6 +1,17 @@
 # Changelog
 
-## 20231230
+## 20231231 (v0.0.10)
+
+Refactored package to handle Uncategorized posts better:
+
+* Adds the Uncategorized category to the category list the even if there are no existing uncategorized posts.
+* If Uncategorized is selected along with other categories, the category selections are ignored and the package saves the file as an Uncategorized post.
+
+## 20231230 (v0.0.9)
+
+Fixed logic errors related to Uncategorized posts
+
+## 20231230 (v0.0.8)
 
 Added support for selecting multiple categories.
 

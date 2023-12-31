@@ -127,6 +127,9 @@ function buildCategoryList(fileList, debugMode) {
             log.debug(`Skipping ${fileName}`);
         }
     }
+    if (!hasBlankCategory) {
+        categories.push({ title: UNCATEGORIZED_STRING, value: '' });
+    }
     return categories;
 }
 function directoryExists(filePath) {
@@ -266,7 +269,7 @@ const questions = [
 const categoryPrompt = {
     type: 'multiselect',
     name: 'postCategories',
-    message: 'Select one or more categories from the list:',
+    message: 'Select one or more categories from the list below:',
     choices: categories,
     initial: 0
 };
@@ -274,16 +277,20 @@ if (categories.length > 0)
     questions.push(categoryPrompt);
 console.log();
 let response = await prompts(questions);
-if (response.postTitle.length < 1) {
-    log.info('Exiting...');
+if (!response.postTitle) {
+    log.info('Cancelled by user');
     process.exit(0);
 }
 let postTitle = response.postTitle;
 log.debug(`\nTitle: ${postTitle}`);
 let catList = [];
-if (response.postCategories.length > 0) {
-    log.debug('One or more categories selected');
-    catList = catList.concat(response.postCategories);
+if (response.postCategories && response.postCategories.length > 0) {
+    if (!response.postCategories.includes('')) {
+        catList = catList.concat(response.postCategories);
+    }
+    else {
+        log.info('\nUncategorized selected, ignoring other selected categories');
+    }
 }
 if (debugMode)
     console.dir(catList);

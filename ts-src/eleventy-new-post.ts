@@ -120,17 +120,14 @@ async function validateConfig(validations: ConfigValidation[]): Promise<ProcessR
       }
     }
   }
-
   if (!configObject.paragraphCount || (configObject.paragraphCount < 1 && configObject.paragraphCount > 101)) {
     processResult.result = false;
     processResult.message += `\nThe 'paragraphCount' value must be greater than 0 and less than 101.`;
   }
-
   if (configObject.openAfterCreate && configObject.editorCmd.length < 1) {
     processResult.result = false;
     processResult.message += '\neditorCmd must contain a value when openAfterCreate is true.'
   }
-
   return processResult;
 }
 
@@ -195,6 +192,10 @@ function buildCategoryList(
     } else {
       log.debug(`Skipping ${fileName}`);
     }
+  }
+  // Add an uncategorized option if needed
+  if (!hasBlankCategory) {
+    categories.push({ title: UNCATEGORIZED_STRING, value: '' });
   }
   return categories;
 }
@@ -367,7 +368,7 @@ const questions: any[] = [
 const categoryPrompt: any = {
   type: 'multiselect',
   name: 'postCategories',
-  message: 'Select one or more categories from the list:',
+  message: 'Select one or more categories from the list below:',
   choices: categories,
   initial: 0
 }
@@ -379,8 +380,8 @@ let response = await prompts(questions);
 
 // Did the user cancel?
 // if (!response.postTitle || (!hasBlankCategory && questions.length > 1 && !response.postCategory)) {
-if (response.postTitle.length < 1) {
-  log.info('Exiting...');
+if (!response.postTitle) {
+  log.info('Cancelled by user');
   process.exit(0);
 }
 
@@ -390,11 +391,20 @@ log.debug(`\nTitle: ${postTitle}`);
 // start with an empty array, assumes no selected category
 let catList: string[] = [];
 // do we have any categories?
-if (response.postCategories.length > 0) {
-  log.debug('One or more categories selected');
-  // append the selected categories to the catList array
-  catList = catList.concat(response.postCategories);
-}
+if (response.postCategories && response.postCategories.length > 0) {
+  // did the user select the uncategorized category?
+  if (!response.postCategories.includes('')) {
+    // no, so append the selected categories to the catList array
+    catList = catList.concat(response.postCategories);
+  } else {
+    // let the user know we're ignoring the other categories
+    log.info('\nUncategorized selected, ignoring other selected categories');
+  }
+} 
+// else {
+//   log.info('\nNo category selected, exiting');
+//   process.exit(0);
+// }
 if (debugMode) console.dir(catList);
 
 // build the target file name
