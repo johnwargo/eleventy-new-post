@@ -1,5 +1,9 @@
 # Changelog
 
+## 20240127 (v0.0.11)
+
+* Automatically create target folder if it does not exist. I added this because when 2024 started, the command failed in projects where I had date folders enabled (`useYear`) but I'd not yet created the folder for 2024. 
+
 ## 20231231 (v0.0.10)
 
 Refactored package to handle Uncategorized posts better:

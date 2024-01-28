@@ -298,6 +298,11 @@ let outputFile = path.join(process.cwd(), configObject.postsFolder);
 if (configObject.useYear) {
     outputFile = path.join(outputFile, new Date().getFullYear().toString());
 }
+console.log();
+if (!fs.existsSync(outputFile)) {
+    log.info(`Creating target folder: "${outputFile}"`);
+    fs.mkdirSync(outputFile, { recursive: true });
+}
 var fileName = postTitle.toLowerCase().replaceAll(' ', '-');
 fileName = fileName.replaceAll('?', '');
 fileName = fileName.replaceAll(':', '-');
@@ -305,7 +310,7 @@ fileName = fileName.replaceAll('---', '-');
 fileName = fileName.replaceAll('--', '-');
 fileName += templateExtension;
 outputFile = path.join(outputFile, fileName);
-log.debug(`\nTarget file: ${outputFile}`);
+log.debug(`Target file: ${outputFile}`);
 if (fs.existsSync(outputFile)) {
     log.info(`File ${outputFile} already exists, exiting`);
     process.exit(1);
@@ -322,11 +327,8 @@ tmpFrontmatter = tmpFrontmatter.replaceAll(': ""', ': ');
 tmpFrontmatter = tmpFrontmatter.replace(/\n$/, '');
 let newFile = templateFile.slice();
 newFile = newFile.replace(YAML_PATTERN, tmpFrontmatter);
-if (!doPopulate) {
-    console.log();
-}
-else {
-    log.info('\nGetting bacon ipsum text (this may take a few seconds)...');
+if (doPopulate) {
+    log.info('Getting bacon ipsum text (this may take a few seconds)...');
     let fetchURL = `https://baconipsum.com/api/?type=all-meat&paras=${configObject.paragraphCount}&start-with-lorem=1`;
     log.debug(`fetchURL: ${fetchURL}`);
     let response = await fetch(fetchURL);

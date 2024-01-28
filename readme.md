@@ -119,6 +119,8 @@ Since the command scans all existing post files to build the list of categories,
 
 When generating the configuration file, the command scans the local project for possible post folder options, so you may see that the configuration option is already populated with the correct value for your project.  If not, populate this configuration variable with the correct value for your project, it should contain a relative path pointing to the project's `posts` folder.
 
+**Note:** If the target posts folder doesn't exist, the module will create it automatically.
+
 ### `templateFile`
 
 Every Eleventy site is setup differently, with different values in the Post template's front matter and content. To make it easier for users, you can simply create the default Post template that works for your site and populate the `templateFile` configuration with the relative path pointing to the file.
@@ -141,7 +143,9 @@ That's all you really need to make this work. If your site uses a different fron
 Some Eleventy site projects store posts in a separate folder per year, some don't - it's a developer choice and this tool has to be flexible. This configuration property controls where the program stores generated post files. 
 
 * Set `useYear` set to false to store new posts in the `postsFolder` folder. Using the example configuration file above, this means new post files save to `./src/posts`.  
-* Set `useYear` set to true to store new posts in the `postsFolder` folder plus an additional subfolder for the year. Using the example configuration file above, this means new post files save to `./src/posts/2023`. 
+* Set `useYear` set to true to store new posts in the `postsFolder` folder plus an additional subfolder for the year. Using the example configuration file above, this means new post files save to `./src/posts/2024`. 
+
+**Note:** If the target posts folder doesn't exist, the module will create it automatically.
 
 ## Usage 
 
