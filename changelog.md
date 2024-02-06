@@ -1,5 +1,9 @@
 # Changelog
 
+## 20240208 (v0.0.12)
+
+Added a new configuration option called `promptTargetFolder`; with this enabled, the utility will scan the configured posts folder (defined in the `postsFolder` configuration option) for subfolders then prompt you to select one of the folders as the destination for the generated post file.
+
 ## 20240127 (v0.0.11)
 
 * Automatically create target folder if it does not exist. I added this because when 2024 started, the command failed in projects where I had date folders enabled (`useYear`) but I'd not yet created the folder for 2024. 

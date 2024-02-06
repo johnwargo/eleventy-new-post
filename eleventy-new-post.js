@@ -72,6 +72,17 @@ async function validateConfig(validations) {
     }
     return processResult;
 }
+function getAllFolders(sourcePath) {
+    var folders = [];
+    folders.push({ title: path.normalize(sourcePath), value: '.' });
+    var allFiles = fs.readdirSync(sourcePath);
+    allFiles.forEach(file => {
+        if (fs.statSync(path.join(sourcePath, file)).isDirectory()) {
+            folders.push({ title: path.join(sourcePath, file), value: file });
+        }
+    });
+    return folders;
+}
 function getAllFiles(dirPath, arrayOfFiles) {
     var files = fs.readdirSync(dirPath);
     arrayOfFiles = arrayOfFiles || [];
@@ -159,12 +170,13 @@ function findFilePath(endPath, thePaths) {
 function buildConfigObject() {
     const theFolders = ['.', 'src'];
     return {
-        postsFolder: findFilePath('posts', theFolders),
-        templateFile: TEMPLATE_FILE,
-        paragraphCount: DEFAULT_PARAGRAPH_COUNT,
-        useYear: false,
+        editorCmd: 'code',
         openAfterCreate: false,
-        editorCmd: 'code'
+        paragraphCount: DEFAULT_PARAGRAPH_COUNT,
+        postsFolder: findFilePath('posts', theFolders),
+        promptTargetFolder: true,
+        templateFile: TEMPLATE_FILE,
+        useYear: false,
     };
 }
 console.log(boxen(APP_NAME, { padding: 1 }));
@@ -236,6 +248,10 @@ if (!res.result) {
     log.error(res.message);
     process.exit(1);
 }
+if (configObject.useYear && configObject.promptTargetFolder) {
+    log.error('\nConfiguration error: Settings `useYear` and `promptTargetFolder` cannot be enabled simultaneously, exiting');
+    process.exit(1);
+}
 templateExtension = path.extname(configObject.templateFile);
 log.debug(`Reading template file ${configObject.templateFile}`);
 const templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
@@ -266,19 +282,34 @@ const questions = [
         message: 'Enter a title for the post:'
     }
 ];
-const categoryPrompt = {
-    type: 'multiselect',
-    name: 'postCategories',
-    message: 'Select one or more categories from the list below:',
-    choices: categories,
-    initial: 0
-};
 if (categories.length > 0)
-    questions.push(categoryPrompt);
+    questions.push({
+        type: 'multiselect',
+        name: 'postCategories',
+        message: 'Select one or more categories from the list below:',
+        choices: categories,
+        initial: 0
+    });
+if (configObject.promptTargetFolder) {
+    var targetFolders = getAllFolders(configObject.postsFolder);
+    if (debugMode)
+        console.dir(targetFolders);
+    if (targetFolders.length < 1) {
+        log.error(`No subfolders found in ${configObject.postsFolder}, exiting.`);
+        process.exit(1);
+    }
+    questions.push({
+        type: 'select',
+        name: 'targetFolder',
+        message: 'Select the target folder for the new post:',
+        choices: targetFolders,
+        initial: 0
+    });
+}
 console.log();
 let response = await prompts(questions);
-if (!response.postTitle) {
-    log.info('Cancelled by user');
+if (!response.postTitle || !response.targetFolder) {
+    log.info('\nCancelled by user');
     process.exit(0);
 }
 let postTitle = response.postTitle;
@@ -297,6 +328,9 @@ if (debugMode)
 let outputFile = path.join(process.cwd(), configObject.postsFolder);
 if (configObject.useYear) {
     outputFile = path.join(outputFile, new Date().getFullYear().toString());
+}
+if (configObject.promptTargetFolder) {
+    outputFile = path.join(outputFile, response.targetFolder);
 }
 console.log();
 if (!fs.existsSync(outputFile)) {

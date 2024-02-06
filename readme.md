@@ -53,7 +53,7 @@ by John M. Wargo (https://johnwargo.com)
 
 Configuration file '11ty-np.json' not found
 Rather than using a bunch of command-line arguments, this tool uses a configuration file instead.
-In the next step, the module will automatically create the configuration file for you.
+In the next step, the utility will automatically create the configuration file for you.
 Once it completes, you can edit the configuration file to change the default values and execute the command again.
 
 ? Create configuration file? » (Y/n)
@@ -72,7 +72,7 @@ by John M. Wargo (https://johnwargo.com)
 
 Configuration file '11ty-np.json' not found
 Rather than using a bunch of command-line arguments, this tool uses a configuration file instead.
-In the next step, the module will automatically create the configuration file for you.
+In the next step, the utility will automatically create the configuration file for you.
 Once it completes, you can edit the configuration file to change the default values and execute the command again.
 
 √ Create configuration file? ... yes
@@ -86,12 +86,13 @@ When it completes, you'll have a new file in the project's root called `11ty-np.
 
 ```json
 {
-  "postsFolder": "src/posts",
-  "templateFile": "11ty-np.md",
+  "editorCmd": "code",
+  "openAfterCreate": true,
   "paragraphCount": 4,
-  "useYear": true,
-  "openAfterCreate": false,
-  "editorCmd": "code"
+  "postsFolder": "src/posts",
+  "promptTargetFolder": false,
+  "templateFile": "11ty-np.md",  
+  "useYear": true
 }
 ```
 
@@ -99,13 +100,14 @@ Edit the configuration settings as needed for your project.
 
 Now, lets talk about the configuration options (in alphabetical order).
 
+
 ### `editorCmd`
 
-With `openAfterCreate` set to `true, the module opens the newly created post file using the editor executable provided here. The value defaults to `code` (Visual Studio Code).
+With `openAfterCreate` set to `true, the utility opens the newly created post file using the editor executable provided here. The value defaults to `code` (Visual Studio Code).
 
 ### `openAfterCreate`
 
-When `true`, the module automatically opens the newly created post for editing using the editor command specified in `editorCmd`.
+When `true`, the utility automatically opens the newly created post for editing using the editor command specified in `editorCmd`.
 
 ### `paragraphCount`
 
@@ -119,7 +121,35 @@ Since the command scans all existing post files to build the list of categories,
 
 When generating the configuration file, the command scans the local project for possible post folder options, so you may see that the configuration option is already populated with the correct value for your project.  If not, populate this configuration variable with the correct value for your project, it should contain a relative path pointing to the project's `posts` folder.
 
-**Note:** If the target posts folder doesn't exist, the module will create it automatically.
+**Note:** If the target posts folder doesn't exist, the utility will create it automatically.
+
+### `promptTargetFolder`
+
+When you're working in an Eleventy project that stores post content in multiple folders (for example `posts` and `news`), enable the `promptTargetFolder` option to have the utility prompt you to select the target folder when creating a new post. 
+
+When you enable this option, the utility scans the folder location defined in `postsFolder` for subfolders then displays the source folder plus the subfolder list when creating a new post as shown in the example below:
+
+```text
+┌───────────────────┐
+│                   │
+│   11ty New Post   │
+│                   │
+└───────────────────┘
+
+by John M. Wargo (https://johnwargo.com)
+
+√ Enter a title for the post: ... Bonfire Planning
+√ Select one or more categories from the list below: » People
+? Select the target folder for the new post: » - Use arrow-keys. Return to submit.
+>   src\posts
+    src\posts\vacations
+    src\posts\purchases
+    src\posts\cars
+```
+
+After you select a folder name from the list, the utility writes the new post to the selected folder.
+
+**Note:** The configuration settings `useYear` and `promptTargetFolder` are mutually exclusive; you can't enable both in your configuration.
 
 ### `templateFile`
 
@@ -145,7 +175,9 @@ Some Eleventy site projects store posts in a separate folder per year, some don'
 * Set `useYear` set to false to store new posts in the `postsFolder` folder. Using the example configuration file above, this means new post files save to `./src/posts`.  
 * Set `useYear` set to true to store new posts in the `postsFolder` folder plus an additional subfolder for the year. Using the example configuration file above, this means new post files save to `./src/posts/2024`. 
 
-**Note:** If the target posts folder doesn't exist, the module will create it automatically.
+**Note:** If the target posts folder doesn't exist, the utility will create it automatically.
+
+**Note:** The configuration settings `useYear` and `promptTargetFolder` are mutually exclusive; you can't enable both in your configuration.
 
 ## Usage 
 
@@ -301,9 +333,9 @@ With this enabled, the program writes more detailed information to the console a
 
 ### Getting Help Or Making Changes
 
-Use [GitHub Issues](https://github.com/johnwargo/11ty-new-post/issues) to get help with this module.
+Use [GitHub Issues](https://github.com/johnwargo/11ty-new-post/issues) to get help with this utility.
 
-Pull Requests gladly accepted, but only with complete documentation of what the change is, why you made it, and why you think its important to have in the module.
+Pull Requests gladly accepted, but only with complete documentation of what the change is, why you made it, and why you think its important to have in the utility.
 
 ***
 

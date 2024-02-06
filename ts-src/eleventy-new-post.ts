@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 /** 
  * Eleventy New Post
  * by John M. Wargo (https://johnwargo.com)
@@ -7,8 +6,6 @@
  * 
  * Copied from the 11ty-cat-pages module.
  */
-
-// TODO: Add support for multiselect categories
 
 // node modules
 import fs from 'fs-extra';
@@ -35,6 +32,8 @@ type ConfigObject = {
   // Added in 0.0.6
   openAfterCreate: boolean;
   editorCmd: string;
+  // added 0.0.12
+  promptTargetFolder: boolean;
 }
 
 type ConfigValidation = {
@@ -48,6 +47,11 @@ type ProcessResult = {
 }
 
 type Choice = {
+  title: string;
+  value: string;
+}
+
+type PromptSelection = {
   title: string;
   value: string;
 }
@@ -129,6 +133,20 @@ async function validateConfig(validations: ConfigValidation[]): Promise<ProcessR
     processResult.message += '\neditorCmd must contain a value when openAfterCreate is true.'
   }
   return processResult;
+}
+
+function getAllFolders(sourcePath: string): PromptSelection[] {
+  var folders: PromptSelection[] = [];
+  // add the source folder to the top of the list
+  folders.push({ title:  path.normalize(sourcePath), value: '.' });
+
+  var allFiles = fs.readdirSync(sourcePath);
+  allFiles.forEach(file => {
+    if (fs.statSync(path.join(sourcePath, file)).isDirectory()) {
+      folders.push({ title: path.join(sourcePath, file), value: file });
+    }
+  });
+  return folders;
 }
 
 function getAllFiles(dirPath: string, arrayOfFiles: string[]) {
@@ -229,12 +247,13 @@ function findFilePath(endPath: string, thePaths: string[]): string {
 function buildConfigObject(): ConfigObject {
   const theFolders: string[] = ['.', 'src'];
   return {
-    postsFolder: findFilePath('posts', theFolders),
-    templateFile: TEMPLATE_FILE,
-    paragraphCount: DEFAULT_PARAGRAPH_COUNT,
-    useYear: false,
+    editorCmd: 'code',
     openAfterCreate: false,
-    editorCmd: 'code'
+    paragraphCount: DEFAULT_PARAGRAPH_COUNT,
+    postsFolder: findFilePath('posts', theFolders),
+    promptTargetFolder: true,
+    templateFile: TEMPLATE_FILE,
+    useYear: false,
   }
 }
 
@@ -325,6 +344,14 @@ if (!res.result) {
   process.exit(1);
 }
 
+if (configObject.useYear && configObject.promptTargetFolder) {
+  log.error('\nConfiguration error: Settings `useYear` and `promptTargetFolder` cannot be enabled simultaneously, exiting');
+  process.exit(1);
+}
+
+// ========================================================================
+// get to work...
+// ========================================================================
 // get the file extension for the template file, we'll use it later
 templateExtension = path.extname(configObject.templateFile);
 // read the template file
@@ -364,24 +391,41 @@ const questions: any[] = [
     name: 'postTitle',
     message: 'Enter a title for the post:'
   }];
-// define this one separately just in case we need it
-const categoryPrompt: any = {
+
+// If we have categories to pick from, then add the category prompt to the questions array
+if (categories.length > 0) questions.push({
   type: 'multiselect',
   name: 'postCategories',
   message: 'Select one or more categories from the list below:',
   choices: categories,
   initial: 0
+});
+
+if (configObject.promptTargetFolder) {
+  // build the list of folders to prompt for based on the posts folder
+  var targetFolders: PromptSelection[] = getAllFolders(configObject.postsFolder);
+  if (debugMode) console.dir(targetFolders);
+
+  if (targetFolders.length < 1) {
+    log.error(`No subfolders found in ${configObject.postsFolder}, exiting.`);
+    process.exit(1);
+  }
+  // add the folder prompt to the questions array
+  questions.push({
+    type: 'select',
+    name: 'targetFolder',
+    message: 'Select the target folder for the new post:',
+    choices: targetFolders,
+    initial: 0
+  });
 }
-// If we have categories to pick from, add the category prompt to the questions array
-if (categories.length > 0) questions.push(categoryPrompt);
 
 console.log();  // throw in a blank line on the console
 let response = await prompts(questions);
 
 // Did the user cancel?
-// if (!response.postTitle || (!hasBlankCategory && questions.length > 1 && !response.postCategory)) {
-if (!response.postTitle) {
-  log.info('Cancelled by user');
+if (!response.postTitle || !response.targetFolder) {
+  log.info('\nCancelled by user');
   process.exit(0);
 }
 
@@ -412,10 +456,15 @@ let outputFile = path.join(process.cwd(), configObject.postsFolder);
 if (configObject.useYear) {
   outputFile = path.join(outputFile, new Date().getFullYear().toString());
 }
+// if we have a target folder, add it to the output file path
+if (configObject.promptTargetFolder) {
+  outputFile = path.join(outputFile, response.targetFolder);
+}
 
 console.log();
 
 // v0.0.11 - Create the target folder if it doesn't exist
+// this is for using year folder after the beginning of a year
 if (!fs.existsSync(outputFile)) {
   log.info(`Creating target folder: "${outputFile}"`);
   fs.mkdirSync(outputFile, { recursive: true });
