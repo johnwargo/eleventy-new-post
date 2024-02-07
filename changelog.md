@@ -1,6 +1,6 @@
 # Changelog
 
-## 20240208 (v0.0.12)
+## 20240208 (v0.0.12 & v0.0.13)
 
 Added a new configuration option called `promptTargetFolder`; with this enabled, the utility will scan the configured posts folder (defined in the `postsFolder` configuration option) for subfolders then prompt you to select one of the folders as the destination for the generated post file.
 
