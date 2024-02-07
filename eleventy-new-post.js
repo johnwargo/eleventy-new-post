@@ -308,7 +308,7 @@ if (configObject.promptTargetFolder) {
 }
 console.log();
 let response = await prompts(questions);
-if (!response.postTitle || !response.targetFolder) {
+if (!response.postTitle || (configObject.promptTargetFolder && !response.targetFolder)) {
     log.info('\nCancelled by user');
     process.exit(0);
 }

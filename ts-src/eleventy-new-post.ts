@@ -138,7 +138,7 @@ async function validateConfig(validations: ConfigValidation[]): Promise<ProcessR
 function getAllFolders(sourcePath: string): PromptSelection[] {
   var folders: PromptSelection[] = [];
   // add the source folder to the top of the list
-  folders.push({ title:  path.normalize(sourcePath), value: '.' });
+  folders.push({ title: path.normalize(sourcePath), value: '.' });
 
   var allFiles = fs.readdirSync(sourcePath);
   allFiles.forEach(file => {
@@ -424,10 +424,12 @@ console.log();  // throw in a blank line on the console
 let response = await prompts(questions);
 
 // Did the user cancel?
-if (!response.postTitle || !response.targetFolder) {
+if (!response.postTitle || (configObject.promptTargetFolder && !response.targetFolder)) {
   log.info('\nCancelled by user');
   process.exit(0);
 }
+
+
 
 let postTitle: string = response.postTitle;
 log.debug(`\nTitle: ${postTitle}`);
