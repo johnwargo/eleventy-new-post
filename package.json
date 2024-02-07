@@ -1,6 +1,6 @@
 {
   "name": "eleventy-new-post",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "Generates a new Eleventy site post (with options)",
   "author": "John M. Wargo",
   "license": "MIT",
