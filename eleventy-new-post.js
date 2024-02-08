@@ -264,12 +264,6 @@ if (!templateFrontmatter) {
     log.error('The template file does not contain any YAML front matter, exiting');
     process.exit(1);
 }
-fileList = getFileList(configObject.postsFolder, debugMode);
-log.debug(`Located ${fileList.length} post files`);
-if (fileList.length > 0) {
-    if (debugMode)
-        console.dir(fileList);
-}
 const questions = [
     {
         type: 'text',
@@ -278,20 +272,26 @@ const questions = [
     }
 ];
 if (configObject.promptCategory) {
-    categories = buildCategoryList(fileList, debugMode);
-    if (categories.length > 0)
-        log.debug(`Found ${categories.length} categories`);
-    categories = categories.sort(compareFunction);
-    if (debugMode)
-        console.table(categories);
-    if (categories.length > 0)
-        questions.push({
-            type: 'multiselect',
-            name: 'postCategories',
-            message: 'Select one or more categories from the list below:',
-            choices: categories,
-            initial: 0
-        });
+    fileList = getFileList(configObject.postsFolder, debugMode);
+    log.debug(`Located ${fileList.length} post files`);
+    if (fileList.length > 0) {
+        if (debugMode)
+            console.dir(fileList);
+        categories = buildCategoryList(fileList, debugMode);
+        if (categories.length > 0)
+            log.debug(`Found ${categories.length} categories`);
+        categories = categories.sort(compareFunction);
+        if (debugMode)
+            console.table(categories);
+        if (categories.length > 0)
+            questions.push({
+                type: 'multiselect',
+                name: 'postCategories',
+                message: 'Select one or more categories from the list below:',
+                choices: categories,
+                initial: 0
+            });
+    }
 }
 if (configObject.promptTargetFolder) {
     var targetFolders = getAllFolders(configObject.postsFolder);

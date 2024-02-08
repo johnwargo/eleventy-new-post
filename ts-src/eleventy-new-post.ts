@@ -263,7 +263,6 @@ function buildConfigObject(): ConfigObject {
 // ====================================
 // Start Here!
 // ====================================
-
 console.log(boxen(APP_NAME, { padding: 1 }));
 console.log('\n' + APP_AUTHOR);
 
@@ -375,13 +374,6 @@ if (!templateFrontmatter) {
 // and the front matter in `templateFrontmatter`
 // ========================================================================
 
-fileList = getFileList(configObject.postsFolder, debugMode);
-log.debug(`Located ${fileList.length} post files`);
-if (fileList.length > 0) {
-  if (debugMode) console.dir(fileList);
-
-}
-
 // The questions array with the title prompt only, 
 const questions: any[] = [
   {
@@ -391,20 +383,25 @@ const questions: any[] = [
   }];
 
 if (configObject.promptCategory) {
-  // build the categories list
-  categories = buildCategoryList(fileList, debugMode);
-  // do we have any categories?
-  if (categories.length > 0) log.debug(`Found ${categories.length} categories`);
-  categories = categories.sort(compareFunction);
-  if (debugMode) console.table(categories);
-  // If we have categories to pick from, then add the category prompt to the questions array
-  if (categories.length > 0) questions.push({
-    type: 'multiselect',
-    name: 'postCategories',
-    message: 'Select one or more categories from the list below:',
-    choices: categories,
-    initial: 0
-  });
+  fileList = getFileList(configObject.postsFolder, debugMode);
+  log.debug(`Located ${fileList.length} post files`);
+  if (fileList.length > 0) {
+    if (debugMode) console.dir(fileList);
+    // build the categories list
+    categories = buildCategoryList(fileList, debugMode);
+    // do we have any categories?
+    if (categories.length > 0) log.debug(`Found ${categories.length} categories`);
+    categories = categories.sort(compareFunction);
+    if (debugMode) console.table(categories);
+    // If we have categories to pick from, then add the category prompt to the questions array
+    if (categories.length > 0) questions.push({
+      type: 'multiselect',
+      name: 'postCategories',
+      message: 'Select one or more categories from the list below:',
+      choices: categories,
+      initial: 0
+    });
+  }
 }
 
 if (configObject.promptTargetFolder) {
