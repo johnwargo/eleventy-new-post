@@ -174,7 +174,8 @@ function buildConfigObject() {
         openAfterCreate: false,
         paragraphCount: DEFAULT_PARAGRAPH_COUNT,
         postsFolder: findFilePath('posts', theFolders),
-        promptTargetFolder: true,
+        promptCategory: true,
+        promptTargetFolder: false,
         templateFile: TEMPLATE_FILE,
         useYear: false,
     };
@@ -268,12 +269,6 @@ log.debug(`Located ${fileList.length} post files`);
 if (fileList.length > 0) {
     if (debugMode)
         console.dir(fileList);
-    categories = buildCategoryList(fileList, debugMode);
-    if (categories.length > 0)
-        log.debug(`Found ${categories.length} categories`);
-    categories = categories.sort(compareFunction);
-    if (debugMode)
-        console.table(categories);
 }
 const questions = [
     {
@@ -282,14 +277,22 @@ const questions = [
         message: 'Enter a title for the post:'
     }
 ];
-if (categories.length > 0)
-    questions.push({
-        type: 'multiselect',
-        name: 'postCategories',
-        message: 'Select one or more categories from the list below:',
-        choices: categories,
-        initial: 0
-    });
+if (configObject.promptCategory) {
+    categories = buildCategoryList(fileList, debugMode);
+    if (categories.length > 0)
+        log.debug(`Found ${categories.length} categories`);
+    categories = categories.sort(compareFunction);
+    if (debugMode)
+        console.table(categories);
+    if (categories.length > 0)
+        questions.push({
+            type: 'multiselect',
+            name: 'postCategories',
+            message: 'Select one or more categories from the list below:',
+            choices: categories,
+            initial: 0
+        });
+}
 if (configObject.promptTargetFolder) {
     var targetFolders = getAllFolders(configObject.postsFolder);
     if (debugMode)
@@ -315,16 +318,18 @@ if (!response.postTitle || (configObject.promptTargetFolder && !response.targetF
 let postTitle = response.postTitle;
 log.debug(`\nTitle: ${postTitle}`);
 let catList = [];
-if (response.postCategories && response.postCategories.length > 0) {
-    if (!response.postCategories.includes('')) {
-        catList = catList.concat(response.postCategories);
+if (configObject.promptCategory) {
+    if (response.postCategories && response.postCategories.length > 0) {
+        if (!response.postCategories.includes('')) {
+            catList = catList.concat(response.postCategories);
+        }
+        else {
+            log.info('\nUncategorized selected, ignoring other selected categories');
+        }
     }
-    else {
-        log.info('\nUncategorized selected, ignoring other selected categories');
-    }
+    if (debugMode)
+        console.dir(catList);
 }
-if (debugMode)
-    console.dir(catList);
 let outputFile = path.join(process.cwd(), configObject.postsFolder);
 if (configObject.useYear) {
     outputFile = path.join(outputFile, new Date().getFullYear().toString());
@@ -352,7 +357,9 @@ if (fs.existsSync(outputFile)) {
 let tmpDate = new Date();
 templateFrontmatter.date = `${tmpDate.getFullYear()}-${zeroPad(tmpDate.getMonth() + 1)}-${zeroPad(tmpDate.getDate())}`;
 templateFrontmatter.title = postTitle;
-templateFrontmatter.categories = catList;
+if (configObject.promptCategory) {
+    templateFrontmatter.categories = catList;
+}
 for (var key in templateFrontmatter) {
     templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] != "") ? templateFrontmatter[key] : '';
 }

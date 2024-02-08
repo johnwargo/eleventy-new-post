@@ -1,8 +1,12 @@
 # Changelog
 
-## 20240208 (v0.0.12 & v0.0.13)
+## 20240207 (v0.0.14)
 
-Added a new configuration option called `promptTargetFolder`; with this enabled, the utility will scan the configured posts folder (defined in the `postsFolder` configuration option) for subfolders then prompt you to select one of the folders as the destination for the generated post file.
+Added a configuration flag to enable/disable category prompt to cover situations where Category isn't used in the site.
+
+## 20240206 (v0.0.12 & v0.0.13)
+
+Added a new configuration option called `promptTargetFolder`; with this enabled, the utility will scan the configured posts folder (defined in the `postsFolder` configuration option) for sub-folders then prompt you to select one of the folders as the destination for the generated post file.
 
 ## 20240127 (v0.0.11)
 

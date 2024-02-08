@@ -34,6 +34,8 @@ type ConfigObject = {
   editorCmd: string;
   // added 0.0.12
   promptTargetFolder: boolean;
+  // added 0.0.14
+  promptCategory: boolean;
 }
 
 type ConfigValidation = {
@@ -251,7 +253,8 @@ function buildConfigObject(): ConfigObject {
     openAfterCreate: false,
     paragraphCount: DEFAULT_PARAGRAPH_COUNT,
     postsFolder: findFilePath('posts', theFolders),
-    promptTargetFolder: true,
+    promptCategory: true,
+    promptTargetFolder: false,
     templateFile: TEMPLATE_FILE,
     useYear: false,
   }
@@ -376,12 +379,7 @@ fileList = getFileList(configObject.postsFolder, debugMode);
 log.debug(`Located ${fileList.length} post files`);
 if (fileList.length > 0) {
   if (debugMode) console.dir(fileList);
-  // build the categories list
-  categories = buildCategoryList(fileList, debugMode);
-  // do we have any categories?
-  if (categories.length > 0) log.debug(`Found ${categories.length} categories`);
-  categories = categories.sort(compareFunction);
-  if (debugMode) console.table(categories);
+
 }
 
 // The questions array with the title prompt only, 
@@ -392,14 +390,22 @@ const questions: any[] = [
     message: 'Enter a title for the post:'
   }];
 
-// If we have categories to pick from, then add the category prompt to the questions array
-if (categories.length > 0) questions.push({
-  type: 'multiselect',
-  name: 'postCategories',
-  message: 'Select one or more categories from the list below:',
-  choices: categories,
-  initial: 0
-});
+if (configObject.promptCategory) {
+  // build the categories list
+  categories = buildCategoryList(fileList, debugMode);
+  // do we have any categories?
+  if (categories.length > 0) log.debug(`Found ${categories.length} categories`);
+  categories = categories.sort(compareFunction);
+  if (debugMode) console.table(categories);
+  // If we have categories to pick from, then add the category prompt to the questions array
+  if (categories.length > 0) questions.push({
+    type: 'multiselect',
+    name: 'postCategories',
+    message: 'Select one or more categories from the list below:',
+    choices: categories,
+    initial: 0
+  });
+}
 
 if (configObject.promptTargetFolder) {
   // build the list of folders to prompt for based on the posts folder
@@ -429,29 +435,25 @@ if (!response.postTitle || (configObject.promptTargetFolder && !response.targetF
   process.exit(0);
 }
 
-
-
 let postTitle: string = response.postTitle;
 log.debug(`\nTitle: ${postTitle}`);
 
 // start with an empty array, assumes no selected category
 let catList: string[] = [];
-// do we have any categories?
-if (response.postCategories && response.postCategories.length > 0) {
-  // did the user select the uncategorized category?
-  if (!response.postCategories.includes('')) {
-    // no, so append the selected categories to the catList array
-    catList = catList.concat(response.postCategories);
-  } else {
-    // let the user know we're ignoring the other categories
-    log.info('\nUncategorized selected, ignoring other selected categories');
+if (configObject.promptCategory) {
+  // do we have any categories?
+  if (response.postCategories && response.postCategories.length > 0) {
+    // did the user select the uncategorized category?
+    if (!response.postCategories.includes('')) {
+      // no, so append the selected categories to the catList array
+      catList = catList.concat(response.postCategories);
+    } else {
+      // let the user know we're ignoring the other categories
+      log.info('\nUncategorized selected, ignoring other selected categories');
+    }
   }
+  if (debugMode) console.dir(catList);
 }
-// else {
-//   log.info('\nNo category selected, exiting');
-//   process.exit(0);
-// }
-if (debugMode) console.dir(catList);
 
 // build the target file name
 let outputFile = path.join(process.cwd(), configObject.postsFolder);
@@ -491,7 +493,11 @@ if (fs.existsSync(outputFile)) {
 let tmpDate = new Date();
 templateFrontmatter.date = `${tmpDate.getFullYear()}-${zeroPad(tmpDate.getMonth() + 1)}-${zeroPad(tmpDate.getDate())}`;
 templateFrontmatter.title = postTitle;
-templateFrontmatter.categories = catList;
+
+if (configObject.promptCategory) {
+  // add the category list to the document
+  templateFrontmatter.categories = catList;
+}
 
 // ensure all front matter properties are populated at least with an empty string
 for (var key in templateFrontmatter) {

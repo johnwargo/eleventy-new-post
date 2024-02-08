@@ -82,7 +82,7 @@ Output file written successfully
 Edit the configuration with the correct values for this project then execute the command again.
 ```
 
-When it completes, you'll have a new file in the project's root called `11ty-np.json` with the following or similar contents (depending on your project's folder setup):
+When the utility completes the process, you'll have a new file in the project's root called `11ty-np.json` with the following or similar contents (depending on your project's folder setup):
 
 ```json
 {
@@ -90,6 +90,7 @@ When it completes, you'll have a new file in the project's root called `11ty-np.
   "openAfterCreate": true,
   "paragraphCount": 4,
   "postsFolder": "src/posts",
+  "promptCategory": true,
   "promptTargetFolder": false,
   "templateFile": "11ty-np.md",  
   "useYear": true
@@ -98,36 +99,41 @@ When it completes, you'll have a new file in the project's root called `11ty-np.
 
 Edit the configuration settings as needed for your project. 
 
-Now, lets talk about the configuration options (in alphabetical order).
-
+Now, lets talk about the configuration options (in alphabetical order)...
 
 ### `editorCmd`
 
-With `openAfterCreate` set to `true, the utility opens the newly created post file using the editor executable provided here. The value defaults to `code` (Visual Studio Code).
+With `openAfterCreate` set to `true`, the utility opens the newly created post file after saving it using the editor executable provided here. The value defaults to `code` (Visual Studio Code).
+
+Populate this setting using the executable name or executable file path required to launch the editor. You can configure Visual Studio Code so it's on the system path, so all you need is `code` to launch it. For a different editor, you may have to configure the full file path to the editor executable.
 
 ### `openAfterCreate`
 
-When `true`, the utility automatically opens the newly created post for editing using the editor command specified in `editorCmd`.
+When `true`, the utility automatically opens the newly created post using editor specified in `editorCmd`. 
 
 ### `paragraphCount`
 
-The `-p` command-line flag (described below) allows you to generate dummy content for new posts. As an example, if you were simply using the command to populate a site with a set of posts for testing or demonstration purposes. 
+The `-p` command-line flag (described below) enables generation of dummy content for new posts. As an example, if you were simply using the command to populate a site with a set of posts for testing or demonstration purposes. 
 
-The `paragraphCount` configuration option controls how many paragraphs of content to request from the [Bacon Ipsum JSON API](https://baconipsum.com/json-api/) and add to a new post. The value here must be between 1 and 100.
+The `paragraphCount` configuration option controls how many paragraphs of content to request from the [Bacon Ipsum JSON API](https://baconipsum.com/json-api/) and add to a new post. The value specified here must be between 1 and 100.
 
 ### `postsFolder`
 
-Since the command scans all existing post files to build the list of categories, it needs to know where to look for files. Also, it needs to know where to store the files it generates. The `postsFolder` configuration option describes that location. 
+Since the utility scans all existing post files to build the list of categories, it must know where to look for the content files to use to build that list. It also must know where to store the files it generates. The `postsFolder` configuration option describes that location. 
 
-When generating the configuration file, the command scans the local project for possible post folder options, so you may see that the configuration option is already populated with the correct value for your project.  If not, populate this configuration variable with the correct value for your project, it should contain a relative path pointing to the project's `posts` folder.
+When generating the configuration file, the command scans the local project for possible post folder options, so you may see that the configuration option is already populated with the correct value for your particular project.  If not, populate this configuration variable with the correct folder location in the project; it should contain a relative path pointing to the project's `posts` folder.
 
 **Note:** If the target posts folder doesn't exist, the utility will create it automatically.
 
+### `promptCategory`
+
+Some Eleventy sites don't use Categories to, you know, categorize posts. Use the `promptCategory` configuration setting (set `promptCategory` to `true`) to enable prompting for the selection of one or more Categories during post creation. When `promptCategory` is `false` the utility skips building the category list and prompting the user to select categories.
+
 ### `promptTargetFolder`
 
-When you're working in an Eleventy project that stores post content in multiple folders (for example `posts` and `news`), enable the `promptTargetFolder` option to have the utility prompt you to select the target folder when creating a new post. 
+When you're working in an Eleventy project that stores post content in multiple folders (for example `posts` and `news`), enable the `promptTargetFolder` option (set `promptTargetFolder` to `true` in the configuration file) to have the utility prompt you to select the target folder when creating a new post. 
 
-When you enable this option, the utility scans the folder location defined in `postsFolder` for subfolders then displays the source folder plus the subfolder list when creating a new post as shown in the example below:
+When you enable this option, the utility scans the folder location defined in `postsFolder` for sub-folders then displays the source folder plus the subfolder list when creating a new post as shown in the example below:
 
 ```text
 ┌───────────────────┐
@@ -187,7 +193,7 @@ Some Eleventy site projects store posts in a separate folder per year, some don'
 11ty-np
 ```
 
-The program will prompt you for the name for the article as shown below:
+The program prompts you for the name for the article/post as shown below:
 
 ```text
 ┌───────────────────┐
