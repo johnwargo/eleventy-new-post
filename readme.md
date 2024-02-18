@@ -182,12 +182,12 @@ by John M. Wargo (https://johnwargo.com)
 √ Select one or more categories from the list below: » Dogs
 √ Select the target folder for the new post: » src\posts\2023
 ? Select the template file to use: » - Use arrow-keys. Return to submit.
->   11ty-np-cats.md
-    11ty-np-dogs.md
+    11ty-np-announce.md
+>   11ty-np-news.md
     11ty-np.md
 ```
 
-For this example, I copied the default template `11ty-np.md` and created two copies `11ty-np-cats.md` and `11ty-np-docs.md` and modified the template content in each. With this in place, I can create new posts for my site selecting the default content for each post based on one of the three templates in the project folder.
+For this example, I copied the default template `11ty-np.md` and created two copies `11ty-np-announce.md` and `11ty-np-news.md` and modified the template content in each. With this in place, I can create new posts for my site selecting the default content for each post based on one of the three templates in the project folder. The `announce` version of the template may have special frontmatter settings or boilerplate content for product announcements while the `news` item may include disclaimer content in the post.
 
 ### `templateFile`
 
