@@ -36,6 +36,8 @@ type ConfigObject = {
   promptTargetFolder: boolean;
   // added 0.0.14
   promptCategory: boolean;
+  // added in 0.0.15
+  promptTemplateFile: boolean;
 }
 
 type ConfigValidation = {
@@ -255,6 +257,7 @@ function buildConfigObject(): ConfigObject {
     postsFolder: findFilePath('posts', theFolders),
     promptCategory: true,
     promptTargetFolder: false,
+    promptTemplateFile: false,
     templateFile: TEMPLATE_FILE,
     useYear: false,
   }
@@ -408,7 +411,6 @@ if (configObject.promptTargetFolder) {
   // build the list of folders to prompt for based on the posts folder
   var targetFolders: PromptSelection[] = getAllFolders(configObject.postsFolder);
   if (debugMode) console.dir(targetFolders);
-
   if (targetFolders.length < 1) {
     log.error(`No subfolders found in ${configObject.postsFolder}, exiting.`);
     process.exit(1);
@@ -419,6 +421,23 @@ if (configObject.promptTargetFolder) {
     name: 'targetFolder',
     message: 'Select the target folder for the new post:',
     choices: targetFolders,
+    initial: 0
+  });
+}
+
+if (configObject.promptTemplateFile) {
+  // build the list of files to prompt for based on the posts folder
+  fileList = getFileList(configObject.postsFolder, debugMode);
+  if (fileList.length < 1) {
+    log.error(`No files found in ${configObject.postsFolder}, exiting.`);
+    process.exit(1);
+  }
+  // add the file prompt to the questions array
+  questions.push({
+    type: 'select',
+    name: 'templateFile',
+    message: 'Select the template file to use:',
+    choices: fileList,
     initial: 0
   });
 }

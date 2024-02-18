@@ -1,5 +1,9 @@
 # Changelog
 
+## 20240218 (v0.0.15)
+
+Added a configuration option which configures the utility to prompt the user for the template file for the new post.
+
 ## 20240207 (v0.0.14)
 
 Added a configuration flag to enable/disable category prompt to cover situations where Category isn't used in the site.
