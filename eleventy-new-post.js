@@ -12,12 +12,12 @@ const APP_AUTHOR = 'by John M. Wargo (https://johnwargo.com)';
 const APP_CONFIG_FILE = '11ty-np.json';
 const DEFAULT_PARAGRAPH_COUNT = 4;
 const ELEVENTY_FILES = ['.eleventy.js', 'eleventy.config.js'];
-const TEMPLATE_FILE = '11ty-np.md';
+const TEMPLATE_ROOT = '11ty-np';
+const TEMPLATE_FILE_DEFAULT = TEMPLATE_ROOT + '.md';
 const UNCATEGORIZED_STRING = 'Uncategorized';
 const YAML_PATTERN = /(?<=---[\r\n]).*?(?=[\r\n]---)/s;
 var categories = [];
 var hasBlankCategory = false;
-var fileList = [];
 var templateExtension;
 function zeroPad(tmpVal, numChars = 2) {
     return tmpVal.toString().padStart(numChars, '0');
@@ -103,6 +103,20 @@ function getFileList(filePath, debugMode) {
     log.debug(`filePath: ${filePath}`);
     return getAllFiles(filePath, []);
 }
+function getTemplateFileList(dirPath, debugMode) {
+    let fileList = [];
+    var files = fs.readdirSync(dirPath);
+    files.forEach(function (file) {
+        if (file != APP_CONFIG_FILE) {
+            if (file.startsWith(TEMPLATE_ROOT)) {
+                if (debugMode)
+                    console.log(`Found template file: ${file}`);
+                fileList.push({ title: file, value: path.join(dirPath, file) });
+            }
+        }
+    });
+    return fileList;
+}
 function buildCategoryList(fileList, debugMode) {
     if (debugMode)
         console.log();
@@ -176,7 +190,8 @@ function buildConfigObject() {
         postsFolder: findFilePath('posts', theFolders),
         promptCategory: true,
         promptTargetFolder: false,
-        templateFile: TEMPLATE_FILE,
+        promptTemplateFile: false,
+        templateFile: TEMPLATE_FILE_DEFAULT,
         useYear: false,
     };
 }
@@ -240,10 +255,10 @@ if (!fs.existsSync(configFilePath)) {
 }
 let configData = fs.readFileSync(configFilePath, 'utf8');
 const configObject = JSON.parse(configData);
-const validations = [
-    { filePath: configObject.postsFolder, isFolder: true },
-    { filePath: configObject.templateFile, isFolder: false }
-];
+const validations = [{ filePath: configObject.postsFolder, isFolder: true }];
+if (!configObject.promptTemplateFile) {
+    validations.push({ filePath: configObject.templateFile, isFolder: false });
+}
 var res = await validateConfig(validations);
 if (!res.result) {
     log.error(res.message);
@@ -251,17 +266,6 @@ if (!res.result) {
 }
 if (configObject.useYear && configObject.promptTargetFolder) {
     log.error('\nConfiguration error: Settings `useYear` and `promptTargetFolder` cannot be enabled simultaneously, exiting');
-    process.exit(1);
-}
-templateExtension = path.extname(configObject.templateFile);
-log.debug(`Reading template file ${configObject.templateFile}`);
-const templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
-let templateDoc = YAML.parseAllDocuments(templateFile, { logLevel: 'silent' });
-let templateFrontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
-if (debugMode)
-    console.dir(templateFrontmatter);
-if (!templateFrontmatter) {
-    log.error('The template file does not contain any YAML front matter, exiting');
     process.exit(1);
 }
 const questions = [
@@ -272,7 +276,7 @@ const questions = [
     }
 ];
 if (configObject.promptCategory) {
-    fileList = getFileList(configObject.postsFolder, debugMode);
+    let fileList = getFileList(configObject.postsFolder, debugMode);
     log.debug(`Located ${fileList.length} post files`);
     if (fileList.length > 0) {
         if (debugMode)
@@ -309,6 +313,20 @@ if (configObject.promptTargetFolder) {
         initial: 0
     });
 }
+if (configObject.promptTemplateFile) {
+    let fileList = getTemplateFileList(process.cwd(), debugMode);
+    if (fileList.length < 1) {
+        log.error(`No template files found in ${configObject.postsFolder}, exiting.`);
+        process.exit(1);
+    }
+    questions.push({
+        type: 'select',
+        name: 'templateFile',
+        message: 'Select the template file to use:',
+        choices: fileList,
+        initial: 0
+    });
+}
 console.log();
 let response = await prompts(questions);
 if (!response.postTitle || (configObject.promptTargetFolder && !response.targetFolder)) {
@@ -329,6 +347,19 @@ if (configObject.promptCategory) {
     }
     if (debugMode)
         console.dir(catList);
+}
+var templateFileName = configObject.promptTemplateFile ? response.templateFile : configObject.templateFile;
+log.debug(`Template file: ${templateFileName}`);
+templateExtension = path.extname(templateFileName);
+log.debug('Reading template file');
+const templateFile = fs.readFileSync(templateFileName, 'utf8');
+let templateDoc = YAML.parseAllDocuments(templateFile, { logLevel: 'silent' });
+let templateFrontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
+if (debugMode)
+    console.dir(templateFrontmatter);
+if (!templateFrontmatter) {
+    log.error('The template file does not contain any YAML front matter, exiting');
+    process.exit(1);
 }
 let outputFile = path.join(process.cwd(), configObject.postsFolder);
 if (configObject.useYear) {

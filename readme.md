@@ -157,11 +157,23 @@ After you select a folder name from the list, the utility writes the new post to
 
 **Note:** The configuration settings `useYear` and `promptTargetFolder` are mutually exclusive; you can't enable both in your configuration.
 
+### `promptTemplateFile`
+
+The utility applies a template to every post it creates; the utility copies the content of the template file into every post it creates. The utility supports configuring a single template used for every post or allows you to configure multiple templates and select them at runtime. 
+
+Use the `promptTemplateFile` configuration option to control whether the utility uses a single template (the `templateFile` option described in the following section) or prompts the user to select a template during new post creation. 
+
+With `promptTemplateFile` set to `false`, the utility uses the `templateFile` configuration option as the template file name. 
+
+With `promptTemplateFile` set to `true`, the utility reads the project folder looking for all files in the folder matching the file name `11ty-np*.*` (ignoring the `11ty-np.json` file because that's the config file and can't be used as a template).
+
 ### `templateFile`
 
-Every Eleventy site is setup differently, with different values in the Post template's front matter and content. To make it easier for users, you can simply create the default Post template that works for your site and populate the `templateFile` configuration with the relative path pointing to the file.
+The utility applies a template to every post it creates; the utility copies the content of the template file into every post it creates. The utility supports configuring a single template used for every post or allows you to configure multiple templates and select them at runtime. 
 
-Here's an example template markdown file called `11ty-np.md`:
+Use the `templateFile` configuration option to configure the template file you want used when generating posts and `promptTemplateFile` is `false`.
+
+To configure the default template used for every post, create a template file using one of your existing posts as a starting point. Save the file to the Eleventy project's root folder and give it an appropriate file name (the default configuration uses `11ty-np.md`). Remove everything from the template file except the content you want automatically copied into each post. Here's an example template markdown file called `11ty-np.md`:
 
 ```markdown
 ---
@@ -171,8 +183,6 @@ date:
 categories: 
 ---
 ```
-
-That's all you really need to make this work. If your site uses a different front matter configuration, simply create a sample post file template, save it to the project's root folder and enter the file name (including extension) in the `templateFile` configuration value. Even if you don't have `title`, `date`, and `categories` in your template front matter, those properties will get added automatically when the command executes.
 
 ### `useYear`
 

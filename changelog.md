@@ -2,7 +2,7 @@
 
 ## 20240218 (v0.0.15)
 
-Added a configuration option which configures the utility to prompt the user for the template file for the new post.
+Added a configuration option `promptTemplateFile` which configures the utility to prompt the user for the template file for the new post. Place one or more template files in the folder matching the file name `11ty-np*.*` and the utility will grab all of them and prompt the user (ignoring the `11ty-np.json` file because that's the config file and can't be used as a template).
 
 ## 20240207 (v0.0.14)
 

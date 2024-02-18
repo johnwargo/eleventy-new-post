@@ -69,13 +69,13 @@ const APP_AUTHOR = 'by John M. Wargo (https://johnwargo.com)';
 const APP_CONFIG_FILE = '11ty-np.json';
 const DEFAULT_PARAGRAPH_COUNT = 4;
 const ELEVENTY_FILES = ['.eleventy.js', 'eleventy.config.js'];
-const TEMPLATE_FILE = '11ty-np.md';
+const TEMPLATE_ROOT = '11ty-np';
+const TEMPLATE_FILE_DEFAULT = TEMPLATE_ROOT + '.md';
 const UNCATEGORIZED_STRING = 'Uncategorized';
 const YAML_PATTERN = /(?<=---[\r\n]).*?(?=[\r\n]---)/s
 
 var categories: Choice[] = [];
 var hasBlankCategory: boolean = false;
-var fileList: String[] = [];
 var templateExtension: string;
 
 // ====================================
@@ -84,6 +84,16 @@ var templateExtension: string;
 
 function zeroPad(tmpVal: number, numChars: number = 2): string {
   return tmpVal.toString().padStart(numChars, '0');
+}
+
+function compareFunction(a: any, b: any) {
+  if (a.title < b.title) {
+    return -1;
+  }
+  if (a.title > b.title) {
+    return 1;
+  }
+  return 0;
 }
 
 function checkEleventyProject(): boolean {
@@ -96,16 +106,6 @@ function checkEleventyProject(): boolean {
     }
   });
   return result;
-}
-
-function compareFunction(a: any, b: any) {
-  if (a.title < b.title) {
-    return -1;
-  }
-  if (a.title > b.title) {
-    return 1;
-  }
-  return 0;
 }
 
 async function validateConfig(validations: ConfigValidation[]): Promise<ProcessResult> {
@@ -173,10 +173,23 @@ function getFileList(filePath: string, debugMode: boolean): String[] {
   return getAllFiles(filePath, []);
 }
 
-function buildCategoryList(
-  fileList: String[],
-  debugMode: boolean
-): Choice[] {
+function getTemplateFileList(dirPath: string, debugMode: boolean): PromptSelection[] {
+  // only return the files in the folder that match the root file name and isn't the
+  // configuration file
+  let fileList: PromptSelection[] = [];
+  var files = fs.readdirSync(dirPath)
+  files.forEach(function (file: string) {
+    if (file != APP_CONFIG_FILE) {
+      if (file.startsWith(TEMPLATE_ROOT)) {
+        if (debugMode) console.log(`Found template file: ${file}`);
+        fileList.push({ title: file, value: path.join(dirPath, file) });
+      }
+    }
+  });
+  return fileList;
+}
+
+function buildCategoryList(fileList: String[], debugMode: boolean): Choice[] {
   if (debugMode) console.log();
   log.debug('Building category list...');
   let categories: Choice[] = [];
@@ -258,13 +271,13 @@ function buildConfigObject(): ConfigObject {
     promptCategory: true,
     promptTargetFolder: false,
     promptTemplateFile: false,
-    templateFile: TEMPLATE_FILE,
+    templateFile: TEMPLATE_FILE_DEFAULT,
     useYear: false,
   }
 }
 
 // ====================================
-// Start Here!
+// Processing Starts Here
 // ====================================
 console.log(boxen(APP_NAME, { padding: 1 }));
 console.log('\n' + APP_AUTHOR);
@@ -329,7 +342,7 @@ if (!fs.existsSync(configFile)) {
 }
 
 // do we have a configuration file? We should, we checked earlier
-log.debug('Configuration file located, validating');
+log.debug('Validating configuration file');
 const configFilePath = path.join(process.cwd(), APP_CONFIG_FILE);
 if (!fs.existsSync(configFilePath)) {
   log.error(`Unable to locate the configuration file '${APP_CONFIG_FILE}'`);
@@ -338,10 +351,14 @@ if (!fs.existsSync(configFilePath)) {
 // Read the config file
 let configData = fs.readFileSync(configFilePath, 'utf8');
 const configObject: ConfigObject = JSON.parse(configData);
-const validations: ConfigValidation[] = [
-  { filePath: configObject.postsFolder, isFolder: true },
-  { filePath: configObject.templateFile, isFolder: false }
-];
+// start validation configuration with posts folder
+const validations: ConfigValidation[] = [{ filePath: configObject.postsFolder, isFolder: true }];
+// are we prompting for the template file?
+if (!configObject.promptTemplateFile) {
+  // then add the validation for the template file config property
+  validations.push({ filePath: configObject.templateFile, isFolder: false });
+}
+
 // Make sure the configuration file is valid
 var res: ProcessResult = await validateConfig(validations);
 if (!res.result) {
@@ -357,26 +374,6 @@ if (configObject.useYear && configObject.promptTargetFolder) {
 // ========================================================================
 // get to work...
 // ========================================================================
-// get the file extension for the template file, we'll use it later
-templateExtension = path.extname(configObject.templateFile);
-// read the template file
-log.debug(`Reading template file ${configObject.templateFile}`);
-const templateFile = fs.readFileSync(configObject.templateFile, 'utf8');
-// get the YAML front matter
-let templateDoc = YAML.parseAllDocuments(templateFile, { logLevel: 'silent' });
-// convert the YAML front matter to a JSON object
-let templateFrontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
-// at this point we have the front matter as a JSON object
-if (debugMode) console.dir(templateFrontmatter);
-if (!templateFrontmatter) {
-  log.error('The template file does not contain any YAML front matter, exiting');
-  process.exit(1);
-}
-// ========================================================================
-// at this point we have the whole template in the `templateFile` variable
-// and the front matter in `templateFrontmatter`
-// ========================================================================
-
 // The questions array with the title prompt only, 
 const questions: any[] = [
   {
@@ -386,7 +383,7 @@ const questions: any[] = [
   }];
 
 if (configObject.promptCategory) {
-  fileList = getFileList(configObject.postsFolder, debugMode);
+  let fileList = getFileList(configObject.postsFolder, debugMode);
   log.debug(`Located ${fileList.length} post files`);
   if (fileList.length > 0) {
     if (debugMode) console.dir(fileList);
@@ -426,10 +423,9 @@ if (configObject.promptTargetFolder) {
 }
 
 if (configObject.promptTemplateFile) {
-  // build the list of files to prompt for based on the posts folder
-  fileList = getFileList(configObject.postsFolder, debugMode);
+  let fileList: PromptSelection[] = getTemplateFileList(process.cwd(), debugMode);
   if (fileList.length < 1) {
-    log.error(`No files found in ${configObject.postsFolder}, exiting.`);
+    log.error(`No template files found in ${configObject.postsFolder}, exiting.`);
     process.exit(1);
   }
   // add the file prompt to the questions array
@@ -446,7 +442,9 @@ console.log();  // throw in a blank line on the console
 let response = await prompts(questions);
 
 // Did the user cancel?
-if (!response.postTitle || (configObject.promptTargetFolder && !response.targetFolder)) {
+if (!response.postTitle ||
+  (configObject.promptTargetFolder && !response.targetFolder) ||
+  (configObject.promptTemplateFile && !response.templateFile) {
   log.info('\nCancelled by user');
   process.exit(0);
 }
@@ -471,6 +469,29 @@ if (configObject.promptCategory) {
   if (debugMode) console.dir(catList);
 }
 
+// set the template file name
+var templateFileName = configObject.promptTemplateFile ? response.templateFile : configObject.templateFile;
+log.debug(`Template file: ${templateFileName}`);
+// get the file extension for the template file, we'll use it later
+templateExtension = path.extname(templateFileName);
+// read the template file
+log.debug('Reading template file');
+const templateFile = fs.readFileSync(templateFileName, 'utf8');
+// get the YAML front matter
+let templateDoc = YAML.parseAllDocuments(templateFile, { logLevel: 'silent' });
+// convert the YAML front matter to a JSON object
+let templateFrontmatter = JSON.parse(JSON.stringify(templateDoc))[0];
+// at this point we have the front matter as a JSON object
+if (debugMode) console.dir(templateFrontmatter);
+if (!templateFrontmatter) {
+  log.error('The template file does not contain any YAML front matter, exiting');
+  process.exit(1);
+}
+// ========================================================================
+// at this point we have the whole template in the `templateFile` variable
+// and the front matter in `templateFrontmatter`
+// ========================================================================
+
 // build the target file name
 let outputFile = path.join(process.cwd(), configObject.postsFolder);
 if (configObject.useYear) {
@@ -490,12 +511,13 @@ if (!fs.existsSync(outputFile)) {
   fs.mkdirSync(outputFile, { recursive: true });
 }
 
+// Yes, I know, this is a bit of a hack, but it works. 
+// if I were better at RegEx...
 var fileName = postTitle.toLowerCase().replaceAll(' ', '-');
 fileName = fileName.replaceAll('?', '');
 fileName = fileName.replaceAll(':', '-');
 fileName = fileName.replaceAll('---', '-');
 fileName = fileName.replaceAll('--', '-');
-// add the file extension to the newly formed file name
 fileName += templateExtension;
 
 outputFile = path.join(outputFile, fileName);
