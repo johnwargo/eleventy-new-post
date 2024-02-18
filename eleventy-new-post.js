@@ -22,6 +22,15 @@ var templateExtension;
 function zeroPad(tmpVal, numChars = 2) {
     return tmpVal.toString().padStart(numChars, '0');
 }
+function compareFunction(a, b) {
+    if (a.title < b.title) {
+        return -1;
+    }
+    if (a.title > b.title) {
+        return 1;
+    }
+    return 0;
+}
 function checkEleventyProject() {
     log.debug('Validating project folder');
     let result = false;
@@ -32,15 +41,6 @@ function checkEleventyProject() {
         }
     });
     return result;
-}
-function compareFunction(a, b) {
-    if (a.title < b.title) {
-        return -1;
-    }
-    if (a.title > b.title) {
-        return 1;
-    }
-    return 0;
 }
 async function validateConfig(validations) {
     var processResult;
@@ -247,7 +247,7 @@ if (!fs.existsSync(configFile)) {
         process.exit(0);
     }
 }
-log.debug('Configuration file located, validating');
+log.debug('Validating configuration file');
 const configFilePath = path.join(process.cwd(), APP_CONFIG_FILE);
 if (!fs.existsSync(configFilePath)) {
     log.error(`Unable to locate the configuration file '${APP_CONFIG_FILE}'`);
@@ -329,7 +329,9 @@ if (configObject.promptTemplateFile) {
 }
 console.log();
 let response = await prompts(questions);
-if (!response.postTitle || (configObject.promptTargetFolder && !response.targetFolder)) {
+if ((!response.postTitle) ||
+    (configObject.promptTargetFolder && !response.targetFolder) ||
+    (configObject.promptTemplateFile && !response.templateFile)) {
     log.info('\nCancelled by user');
     process.exit(0);
 }

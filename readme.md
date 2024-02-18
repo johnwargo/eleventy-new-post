@@ -165,7 +165,29 @@ Use the `promptTemplateFile` configuration option to control whether the utility
 
 With `promptTemplateFile` set to `false`, the utility uses the `templateFile` configuration option as the template file name. 
 
-With `promptTemplateFile` set to `true`, the utility reads the project folder looking for all files in the folder matching the file name `11ty-np*.*` (ignoring the `11ty-np.json` file because that's the config file and can't be used as a template).
+With `promptTemplateFile` set to `true`, the utility reads the project folder looking for all files in the folder matching the file name `11ty-np*.*` (ignoring the `11ty-np.json` file because that's the config file and can't be used as a template). If then displays the list of template files for you to select the correct template you want used for the current post.
+
+Here's an example of what it looks like in the terminal:
+
+```text
+┌───────────────────┐
+│                   │
+│   11ty New Post   │
+│                   │
+└───────────────────┘
+
+by John M. Wargo (https://johnwargo.com)
+
+√ Enter a title for the post: ... My New Post
+√ Select one or more categories from the list below: » Dogs
+√ Select the target folder for the new post: » src\posts\2023
+? Select the template file to use: » - Use arrow-keys. Return to submit.
+>   11ty-np-cats.md
+    11ty-np-dogs.md
+    11ty-np.md
+```
+
+For this example, I copied the default template `11ty-np.md` and created two copies `11ty-np-cats.md` and `11ty-np-docs.md` and modified the template content in each. With this in place, I can create new posts for my site selecting the default content for each post based on one of the three templates in the project folder.
 
 ### `templateFile`
 

@@ -442,9 +442,9 @@ console.log();  // throw in a blank line on the console
 let response = await prompts(questions);
 
 // Did the user cancel?
-if (!response.postTitle ||
+if ((!response.postTitle) ||
   (configObject.promptTargetFolder && !response.targetFolder) ||
-  (configObject.promptTemplateFile && !response.templateFile) {
+  (configObject.promptTemplateFile && !response.templateFile)) {
   log.info('\nCancelled by user');
   process.exit(0);
 }
