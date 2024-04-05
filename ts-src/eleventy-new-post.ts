@@ -38,6 +38,8 @@ type ConfigObject = {
   promptCategory: boolean;
   // added in 0.0.15
   promptTemplateFile: boolean;
+  // added in 0.0.16
+  timeStamp: boolean;
 }
 
 type ConfigValidation = {
@@ -272,6 +274,7 @@ function buildConfigObject(): ConfigObject {
     promptTargetFolder: false,
     promptTemplateFile: false,
     templateFile: TEMPLATE_FILE_DEFAULT,
+    timeStamp: false,
     useYear: false,
   }
 }
@@ -528,9 +531,14 @@ if (fs.existsSync(outputFile)) {
 }
 
 // update the front matter with the post title and category
+templateFrontmatter.title = postTitle;
 let tmpDate = new Date();
 templateFrontmatter.date = `${tmpDate.getFullYear()}-${zeroPad(tmpDate.getMonth() + 1)}-${zeroPad(tmpDate.getDate())}`;
-templateFrontmatter.title = postTitle;
+// added in 0.0.16
+if (configObject.timeStamp) {
+  log.debug('Adding timestamp to front matter');
+  templateFrontmatter.timestamp = tmpDate.toISOString();
+}
 
 if (configObject.promptCategory) {
   // add the category list to the document

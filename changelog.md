@@ -1,5 +1,9 @@
 # Changelog
 
+## 20240405 (v0.0.16)
+
+Added `timeStamp` configuration option that when enabled adds a `timestamp` property to the new post's front matter with the current timestamp. Requested in [Time Support in Date Property](https://github.com/johnwargo/eleventy-new-post/issues/2).
+
 ## 20240218 (v0.0.15)
 
 Added a configuration option `promptTemplateFile` which configures the utility to prompt the user for the template file for the new post. Place one or more template files in the folder matching the file name `11ty-np*.*` and the utility will grab all of them and prompt the user (ignoring the `11ty-np.json` file because that's the config file and can't be used as a template).
