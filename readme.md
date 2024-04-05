@@ -206,6 +206,26 @@ categories:
 ---
 ```
 
+### `timeStamp`
+
+Eleventy has specific rules about how it uses a post file's `date` front matter property as described in [Content Dates](https://www.11ty.dev/docs/dates/). For the purpose of this particular setting, it's important to note that Eleventy only cares about the post date, not any timestamp associated with it. So if you put a timestamp in the front matter's `date` property that looks like this: `2024-04-05T21:15:35.719Z`, when you render the property on a page, Eleventy will only show the date portion.
+
+If you want to display a post creation time, you must add an additional property to the post's front matter.
+
+When you enable `timeStamp` in the configuration file (`"timeStamp: true`), the utility automatically adds the `timestamp` property to the post's front matter and sets it to the current date/time. You can then use that property to display both the post creation date and time in a site (and even include it in a RSS feed).
+
+```yaml
+---
+layout: default
+title: Added TimeStamp
+description: 
+date: 2024-04-05
+categories:
+  - People
+timestamp: 2024-04-05T21:21:09.591Z
+---
+```
+
 ### `useYear`
 
 Some Eleventy site projects store posts in a separate folder per year, some don't - it's a developer choice and this tool has to be flexible. This configuration property controls where the program stores generated post files. 

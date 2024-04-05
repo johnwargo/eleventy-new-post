@@ -192,6 +192,7 @@ function buildConfigObject() {
         promptTargetFolder: false,
         promptTemplateFile: false,
         templateFile: TEMPLATE_FILE_DEFAULT,
+        timeStamp: false,
         useYear: false,
     };
 }
@@ -387,9 +388,13 @@ if (fs.existsSync(outputFile)) {
     log.info(`File ${outputFile} already exists, exiting`);
     process.exit(1);
 }
+templateFrontmatter.title = postTitle;
 let tmpDate = new Date();
 templateFrontmatter.date = `${tmpDate.getFullYear()}-${zeroPad(tmpDate.getMonth() + 1)}-${zeroPad(tmpDate.getDate())}`;
-templateFrontmatter.title = postTitle;
+if (configObject.timeStamp) {
+    log.debug('Adding timestamp to front matter');
+    templateFrontmatter.timestamp = tmpDate.toISOString();
+}
 if (configObject.promptCategory) {
     templateFrontmatter.categories = catList;
 }
