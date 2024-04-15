@@ -189,6 +189,7 @@ function buildConfigObject() {
         paragraphCount: DEFAULT_PARAGRAPH_COUNT,
         postsFolder: findFilePath('posts', theFolders),
         promptCategory: true,
+        promptTag: false,
         promptTargetFolder: false,
         promptTemplateFile: false,
         templateFile: TEMPLATE_FILE_DEFAULT,
@@ -336,7 +337,7 @@ if ((!response.postTitle) ||
     log.info('\nCancelled by user');
     process.exit(0);
 }
-let postTitle = response.postTitle;
+let postTitle = response.postTitle.trim();
 log.debug(`\nTitle: ${postTitle}`);
 let catList = [];
 if (configObject.promptCategory) {

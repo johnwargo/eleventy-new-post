@@ -1,5 +1,9 @@
 # Changelog
 
+## 20240415 (v0.0.17)
+
+Added code to trim the post title, removing leading and trailing spaces. I noticed this when I accidentally added an extra space to the end of a title and the file name ended with a `-`.
+
 ## 20240405 (v0.0.16)
 
 Added `timeStamp` configuration option that when enabled adds a `timestamp` property to the new post's front matter with the current timestamp. Requested in [Time Support in Date Property](https://github.com/johnwargo/eleventy-new-post/issues/2).

@@ -452,7 +452,7 @@ if ((!response.postTitle) ||
   process.exit(0);
 }
 
-let postTitle: string = response.postTitle;
+let postTitle: string = response.postTitle.trim();
 log.debug(`\nTitle: ${postTitle}`);
 
 // start with an empty array, assumes no selected category
