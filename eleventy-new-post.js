@@ -189,7 +189,6 @@ function buildConfigObject() {
         paragraphCount: DEFAULT_PARAGRAPH_COUNT,
         postsFolder: findFilePath('posts', theFolders),
         promptCategory: true,
-        promptTag: false,
         promptTargetFolder: false,
         promptTemplateFile: false,
         templateFile: TEMPLATE_FILE_DEFAULT,
@@ -210,6 +209,10 @@ if (!checkEleventyProject()) {
     process.exit(1);
 }
 log.debug('Project is an Eleventy project folder');
+const onCancelPrompt = () => {
+    log.info('\nOperation cancelled by user!');
+    process.exit(0);
+};
 const configFile = path.join(process.cwd(), APP_CONFIG_FILE);
 log.debug('Locating configuration file');
 if (!fs.existsSync(configFile)) {
@@ -223,7 +226,7 @@ if (!fs.existsSync(configFile)) {
         name: 'continue',
         message: 'Create configuration file?',
         initial: true
-    });
+    }, { onCancel: onCancelPrompt });
     if (response.continue) {
         let configObject = buildConfigObject();
         if (debugMode)
@@ -330,13 +333,7 @@ if (configObject.promptTemplateFile) {
     });
 }
 console.log();
-let response = await prompts(questions);
-if ((!response.postTitle) ||
-    (configObject.promptTargetFolder && !response.targetFolder) ||
-    (configObject.promptTemplateFile && !response.templateFile)) {
-    log.info('\nCancelled by user');
-    process.exit(0);
-}
+let response = await prompts(questions, { onCancel: onCancelPrompt });
 let postTitle = response.postTitle.trim();
 log.debug(`\nTitle: ${postTitle}`);
 let catList = [];

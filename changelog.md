@@ -1,5 +1,9 @@
 # Changelog
 
+## 20250101 (v0.0.18)
+
+Added better cancel handling using an onCancel event handler.
+
 ## 20240415 (v0.0.17)
 
 Added code to trim the post title, removing leading and trailing spaces. I noticed this when I accidentally added an extra space to the end of a title and the file name ended with a `-`.
