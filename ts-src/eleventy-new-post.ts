@@ -450,14 +450,6 @@ if (configObject.promptTemplateFile) {
 console.log();  // throw in a blank line on the console
 let response = await prompts(questions, { onCancel: onCancelPrompt });
 
-// // Did the user cancel?
-// if ((!response.postTitle) ||
-//   (configObject.promptTargetFolder && !response.targetFolder) ||
-//   (configObject.promptTemplateFile && !response.templateFile)) {
-//   log.info('\nCancelled by user');
-//   process.exit(0);
-// }
-
 let postTitle: string = response.postTitle.trim();
 log.debug(`\nTitle: ${postTitle}`);
 
