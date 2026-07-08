@@ -12,6 +12,7 @@ const APP_AUTHOR = 'by John M. Wargo (https://johnwargo.com)';
 const APP_CONFIG_FILE = '11ty-np.json';
 const DEFAULT_PARAGRAPH_COUNT = 4;
 const ELEVENTY_FILES = ['.eleventy.js', 'eleventy.config.js'];
+const HIDDEN_EXTENSION = '.hidden';
 const TEMPLATE_ROOT = '11ty-np';
 const TEMPLATE_FILE_DEFAULT = TEMPLATE_ROOT + '.md';
 const UNCATEGORIZED_STRING = 'Uncategorized';
@@ -194,6 +195,7 @@ function buildConfigObject() {
         templateFile: TEMPLATE_FILE_DEFAULT,
         timeStamp: false,
         useYear: false,
+        hiddenExtension: false
     };
 }
 console.log(boxen(APP_NAME, { padding: 1 }));
@@ -379,7 +381,7 @@ fileName = fileName.replaceAll('?', '');
 fileName = fileName.replaceAll(':', '-');
 fileName = fileName.replaceAll('---', '-');
 fileName = fileName.replaceAll('--', '-');
-fileName += templateExtension;
+fileName += configObject.hiddenExtension ? HIDDEN_EXTENSION : templateExtension;
 outputFile = path.join(outputFile, fileName);
 log.debug(`Target file: ${outputFile}`);
 if (fs.existsSync(outputFile)) {

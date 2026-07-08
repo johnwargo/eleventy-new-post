@@ -40,6 +40,8 @@ type ConfigObject = {
   promptTemplateFile: boolean;
   // added in 0.0.16
   timeStamp: boolean;
+  // added in 0.0.19
+  hiddenExtension: boolean
 }
 
 type ConfigValidation = {
@@ -71,6 +73,7 @@ const APP_AUTHOR = 'by John M. Wargo (https://johnwargo.com)';
 const APP_CONFIG_FILE = '11ty-np.json';
 const DEFAULT_PARAGRAPH_COUNT = 4;
 const ELEVENTY_FILES = ['.eleventy.js', 'eleventy.config.js'];
+const HIDDEN_EXTENSION = '.hidden';
 const TEMPLATE_ROOT = '11ty-np';
 const TEMPLATE_FILE_DEFAULT = TEMPLATE_ROOT + '.md';
 const UNCATEGORIZED_STRING = 'Uncategorized';
@@ -276,6 +279,7 @@ function buildConfigObject(): ConfigObject {
     templateFile: TEMPLATE_FILE_DEFAULT,
     timeStamp: false,
     useYear: false,
+    hiddenExtension: false
   }
 }
 
@@ -306,7 +310,6 @@ const onCancelPrompt = () => {
   log.info('\nOperation cancelled by user!');
   process.exit(0);
 };
-
 
 // does the config file exist?
 const configFile = path.join(process.cwd(), APP_CONFIG_FILE);
@@ -519,7 +522,7 @@ fileName = fileName.replaceAll('?', '');
 fileName = fileName.replaceAll(':', '-');
 fileName = fileName.replaceAll('---', '-');
 fileName = fileName.replaceAll('--', '-');
-fileName += templateExtension;
+fileName += configObject.hiddenExtension ? HIDDEN_EXTENSION : templateExtension;
 
 outputFile = path.join(outputFile, fileName);
 log.debug(`Target file: ${outputFile}`);

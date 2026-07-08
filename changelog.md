@@ -1,5 +1,9 @@
 # Changelog
 
+## 20260707 (v0.0.19)
+
+Added a configuration option which allows the user to create the post hidden (with a `.hidden' extension) if they don't want the post published immediately.
+
 ## 20250101 (v0.0.18)
 
 Added better cancel handling using an onCancel event handler.
