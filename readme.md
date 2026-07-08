@@ -87,6 +87,7 @@ When the utility completes the process, you'll have a new file in the project's 
 ```json
 {
   "editorCmd": "code",
+  "hiddenExtension": false,
   "openAfterCreate": true,
   "paragraphCount": 4,
   "postsFolder": "src/posts",
@@ -107,15 +108,27 @@ With `openAfterCreate` set to `true`, the utility opens the newly created post f
 
 Populate this setting using the executable name or executable file path required to launch the editor. You can configure Visual Studio Code so it's on the system path, so all you need is `code` to launch it. For a different editor, you may have to configure the full file path to the editor executable.
 
+Default: `code`.
+
+### `hiddenExtension`
+
+When `true`, sets the file extension on the outputted file to `.hidden` so that Eleventy won't publish it. You must manually change the extension to a supported extension (based on the file type) to have Eleventy publish the page.
+
+Default: `false`.
+
 ### `openAfterCreate`
 
 When `true`, the utility automatically opens the newly created post using editor specified in `editorCmd`. 
+
+Default: `false`.
 
 ### `paragraphCount`
 
 The `-p` command-line flag (described below) enables generation of dummy content for new posts. As an example, if you were simply using the command to populate a site with a set of posts for testing or demonstration purposes. 
 
 The `paragraphCount` configuration option controls how many paragraphs of content to request from the [Bacon Ipsum JSON API](https://baconipsum.com/json-api/) and add to a new post. The value specified here must be between 1 and 100.
+
+Default: 4.
 
 ### `postsFolder`
 
@@ -125,13 +138,19 @@ When generating the configuration file, the command scans the local project for 
 
 **Note:** If the target posts folder doesn't exist, the utility will create it automatically.
 
+Default: `./posts`, or `src/posts` whichever the app finds first.
+
 ### `promptCategory`
 
 Some Eleventy sites don't use Categories to, you know, categorize posts. Use the `promptCategory` configuration setting (set `promptCategory` to `true`) to enable prompting for the selection of one or more Categories during post creation. When `promptCategory` is `false` the utility skips building the category list and prompting the user to select categories.
 
+Default: `true`.
+
 ### `promptTargetFolder`
 
 When you're working in an Eleventy project that stores post content in multiple folders (for example `posts` and `news`), enable the `promptTargetFolder` option (set `promptTargetFolder` to `true` in the configuration file) to have the utility prompt you to select the target folder when creating a new post. 
+
+Default: `false`.
 
 When you enable this option, the utility scans the folder location defined in `postsFolder` for sub-folders then displays the source folder plus the subfolder list when creating a new post as shown in the example below:
 
@@ -167,6 +186,8 @@ With `promptTemplateFile` set to `false`, the utility uses the `templateFile` co
 
 With `promptTemplateFile` set to `true`, the utility reads the project folder looking for all files in the folder matching the file name `11ty-np*.*` (ignoring the `11ty-np.json` file because that's the config file and can't be used as a template). If then displays the list of template files for you to select the correct template you want used for the current post.
 
+Default: `false`.
+
 Here's an example of what it looks like in the terminal:
 
 ```text
@@ -195,6 +216,8 @@ The utility applies a template to every post it creates; the utility copies the 
 
 Use the `templateFile` configuration option to configure the template file you want used when generating posts and `promptTemplateFile` is `false`.
 
+Default: `11ty-np.md`.
+
 To configure the default template used for every post, create a template file using one of your existing posts as a starting point. Save the file to the Eleventy project's root folder and give it an appropriate file name (the default configuration uses `11ty-np.md`). Remove everything from the template file except the content you want automatically copied into each post. Here's an example template markdown file called `11ty-np.md`:
 
 ```markdown
@@ -209,6 +232,8 @@ categories:
 ### `timeStamp`
 
 Eleventy has specific rules about how it uses a post file's `date` front matter property as described in [Content Dates](https://www.11ty.dev/docs/dates/). For the purpose of this particular setting, it's important to note that Eleventy only cares about the post date, not any timestamp associated with it. So if you put a timestamp in the front matter's `date` property that looks like this: `2024-04-05T21:15:35.719Z`, when you render the property on a page, Eleventy will only show the date portion.
+
+Default: `true`.
 
 If you want to display a post creation time, you must add an additional property to the post's front matter.
 
@@ -232,6 +257,8 @@ Some Eleventy site projects store posts in a separate folder per year, some don'
 
 * Set `useYear` set to false to store new posts in the `postsFolder` folder. Using the example configuration file above, this means new post files save to `./src/posts`.  
 * Set `useYear` set to true to store new posts in the `postsFolder` folder plus an additional subfolder for the year. Using the example configuration file above, this means new post files save to `./src/posts/2024`. 
+
+Default: `false`.
 
 **Note:** If the target posts folder doesn't exist, the utility will create it automatically.
 
