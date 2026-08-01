@@ -1,5 +1,9 @@
 # Changelog
 
+## 20260801 (v0.0.20)
+
+Added a command-line parameter `-u` which updates the config file with any default options missing from the file. This was added specifically to deal with new config options added to the utility (like `v0.0.19` below).
+
 ## 20260707 (v0.0.19)
 
 Added a configuration option which allows the user to create the post hidden (with a `.hidden' extension) if they don't want the post published immediately.

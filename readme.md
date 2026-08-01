@@ -345,6 +345,8 @@ by John M. Wargo (https://johnwargo.com)
 Writing content to D:\dev\node\11ty-new-post\src\posts\2023\sample-post.md
 ```
 
+### Populate
+
 If you enable the `-p` (populate) flag as shown below:
 
 ```shell
@@ -407,6 +409,18 @@ tail andouille sirloin filet mignon.  Salami prosciutto alcatra swine jerky
 chicken short loin.  Sausage landjaeger short ribs porchetta venison cow 
 doner filet mignon short loin.
 ```
+
+### Update
+
+When I add configuration new options, your local config file doesn't automatically get them. You can add them manually by editing the configuration file or you can launch the utility using the following command-line option:
+
+```shell
+11ty-np -u
+```
+
+With this option, the utility reads the configuration file, copies in any missing defaults, then writes the changes back to disk.
+
+### Debug Mode
 
 If something's not working like you expect or you think there's something wrong, you can enable Debug Mode using the `-d` flag on the command line:
 
