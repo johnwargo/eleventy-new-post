@@ -293,6 +293,7 @@ console.log('\n' + APP_AUTHOR);
 const myArgs = process.argv.slice(2);
 const debugMode = myArgs.includes('-d');
 const doPopulate = myArgs.includes('-p');
+const doUpdate = myArgs.includes('-u');
 
 // set the logger log level
 log.level(debugMode ? log.DEBUG : log.INFO);
@@ -381,6 +382,31 @@ if (!res.result) {
 if (configObject.useYear && configObject.promptTargetFolder) {
   log.error('\nConfiguration error: Settings `useYear` and `promptTargetFolder` cannot be enabled simultaneously, exiting');
   process.exit(1);
+}
+
+if (doUpdate) {
+  log.info('\nUpdating configuration file');
+  // get the default options
+  let defaultConfig = buildConfigObject();
+  // build a new config object, adding the missing defaults to it
+  let newConfigObject = {...defaultConfig, ...configObject};
+  // write the new configuration object to the config file
+  let outputStr = JSON.stringify(newConfigObject, null, 2);
+  // replace the backslashes with forward slashes
+  // do this so on windows it won't have double backslashes
+  outputStr = outputStr.replace(/\\/g, '/');
+  outputStr = outputStr.replaceAll('//', '/');
+  log.info(`Writing configuration file ${APP_CONFIG_FILE}`);
+  try {
+    fs.writeFileSync(path.join('.', APP_CONFIG_FILE), outputStr, 'utf8');
+    log.info('Output file written successfully');
+  } catch (err: any) {
+    log.error(`Unable to write to ${APP_CONFIG_FILE}`);
+    console.dir(err);
+    process.exit(1);
+  }
+  log.info('Exiting...');
+  process.exit(0);
 }
 
 // ========================================================================

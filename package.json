@@ -22,6 +22,7 @@
     "build": "tsc",
     "dev1": "tsc && node eleventy-new-post.js -d",
     "dev2": "tsc && node eleventy-new-post.js -d -p",
+    "update": "tsc && node eleventy-new-post.js -u",
     "start": "tsc && node eleventy-new-post.js"
   },
   "dependencies": {
