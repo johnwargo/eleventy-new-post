@@ -9,3 +9,4 @@ tsconfig.json
 .eleventy.js
 11ty-np.json
 11ty-np.md
+pub.cmd
