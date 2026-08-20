@@ -1,5 +1,9 @@
 # Changelog
 
+## 20260819 (v0.0.21)
+
+Fixed a logic error in the part of the code that ensured front matter properties are not null.
+
 ## 20260801 (v0.0.20)
 
 Added a command-line parameter `-u` which updates the config file with any default options missing from the file. This was added specifically to deal with new config options added to the utility (like `v0.0.19` below).

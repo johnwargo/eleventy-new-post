@@ -578,7 +578,8 @@ if (configObject.promptCategory) {
 //   templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] !='') ? templateFrontmatter[key] : '';
 // }
 for (var key in templateFrontmatter) {
-  if (templateFrontmatter[key]==null) templateFrontmatter[key] = '';
+  // if its null, use an empty string
+  if (templateFrontmatter[key] == null) templateFrontmatter[key] = '';
 }
 
 // Get the front matter in string format
