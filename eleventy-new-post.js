@@ -88,8 +88,8 @@ function getAllFiles(dirPath, arrayOfFiles) {
     var files = fs.readdirSync(dirPath);
     arrayOfFiles = arrayOfFiles || [];
     files.forEach(function (file) {
-        if (fs.statSync(dirPath + "/" + file).isDirectory()) {
-            arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles);
+        if (fs.statSync(dirPath + '/' + file).isDirectory()) {
+            arrayOfFiles = getAllFiles(dirPath + '/' + file, arrayOfFiles);
         }
         else {
             arrayOfFiles.push(path.join(process.cwd(), dirPath, file));
@@ -420,7 +420,7 @@ if (configObject.promptCategory) {
     templateFrontmatter.categories = catList;
 }
 for (var key in templateFrontmatter) {
-    templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] != "") ? templateFrontmatter[key] : '';
+    templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] != '') ? templateFrontmatter[key] : '';
 }
 let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
 tmpFrontmatter = tmpFrontmatter.replaceAll(': ""', ': ');

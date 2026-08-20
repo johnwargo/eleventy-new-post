@@ -162,8 +162,8 @@ function getAllFiles(dirPath: string, arrayOfFiles: string[]) {
   var files = fs.readdirSync(dirPath)
   arrayOfFiles = arrayOfFiles || []
   files.forEach(function (file: string) {
-    if (fs.statSync(dirPath + "/" + file).isDirectory()) {
-      arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles)
+    if (fs.statSync(dirPath + '/' + file).isDirectory()) {
+      arrayOfFiles = getAllFiles(dirPath + '/' + file, arrayOfFiles)
     } else {
       arrayOfFiles.push(path.join(process.cwd(), dirPath, file));
     }
@@ -574,7 +574,7 @@ if (configObject.promptCategory) {
 
 // ensure all front matter properties are populated at least with an empty string
 for (var key in templateFrontmatter) {
-  templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] != "") ? templateFrontmatter[key] : '';
+  templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] !='') ? templateFrontmatter[key] : 'dog';
 }
 
 // Get the front matter in string format
