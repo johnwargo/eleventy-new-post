@@ -572,11 +572,7 @@ if (configObject.promptCategory) {
   templateFrontmatter.categories = catList;
 }
 
-// ensure all front matter properties are populated at least with an empty string
-// for (var key in templateFrontmatter) {
-//   console.log(`Checking front matter key: ${key}: ${templateFrontmatter[key]}`);
-//   templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] !='') ? templateFrontmatter[key] : '';
-// }
+// Check all front matter properties and ensure they are not null
 for (var key in templateFrontmatter) {
   // if its null, use an empty string
   if (templateFrontmatter[key] == null) templateFrontmatter[key] = '';
