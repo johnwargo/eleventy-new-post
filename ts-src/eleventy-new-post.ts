@@ -389,7 +389,7 @@ if (doUpdate) {
   // get the default options
   let defaultConfig = buildConfigObject();
   // build a new config object, adding the missing defaults to it
-  let newConfigObject = {...defaultConfig, ...configObject};
+  let newConfigObject = { ...defaultConfig, ...configObject };
   // write the new configuration object to the config file
   let outputStr = JSON.stringify(newConfigObject, null, 2);
   // replace the backslashes with forward slashes
@@ -573,8 +573,12 @@ if (configObject.promptCategory) {
 }
 
 // ensure all front matter properties are populated at least with an empty string
+// for (var key in templateFrontmatter) {
+//   console.log(`Checking front matter key: ${key}: ${templateFrontmatter[key]}`);
+//   templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] !='') ? templateFrontmatter[key] : '';
+// }
 for (var key in templateFrontmatter) {
-  templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] !='') ? templateFrontmatter[key] : 'dog';
+  if (templateFrontmatter[key]==null) templateFrontmatter[key] = '';
 }
 
 // Get the front matter in string format

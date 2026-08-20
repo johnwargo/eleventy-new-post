@@ -420,7 +420,8 @@ if (configObject.promptCategory) {
     templateFrontmatter.categories = catList;
 }
 for (var key in templateFrontmatter) {
-    templateFrontmatter[key] = (templateFrontmatter[key] !== null) && (templateFrontmatter[key] != '') ? templateFrontmatter[key] : '';
+    if (templateFrontmatter[key] == null)
+        templateFrontmatter[key] = '';
 }
 let tmpFrontmatter = YAML.stringify(templateFrontmatter, { logLevel: 'silent' });
 tmpFrontmatter = tmpFrontmatter.replaceAll(': ""', ': ');
